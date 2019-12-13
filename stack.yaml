@@ -18,7 +18,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: lts-13.15
+resolver: ghc-8.4.4 # lts-13.15
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -51,6 +51,12 @@ extra-deps:
   # See discussion here:
   # https://github.com/GrammaticalFramework/gf-core/issues/32 
   - src/runtime/haskell/      # pgf.cabal
+- glpk-hs-0.7@sha256:d31d2ce80f301ab24946d486e13a85d5dcfb8b065a14bfbda7ea5a7fa41cf560
+- gasp-1.2.0.0@sha256:588f9d470ed8e51ff3819b496d5a5a2f41c55b613fee7f5c59da6271e73ef7d3
+- exceptions-0.10.3@sha256:6e8e66f3acf2ea59f9e100c55a885591c1981789ac2222022ff523c30990efb8
+- random-1.1@sha256:7b67624fd76ddf97c206de0801dc7e888097e9d572974be9b9ea6551d76965df
+- utf8-string-1.0.1.1@sha256:68cc6cf665e7212334a51b63d6936daeaca023b2cfe8637d130acfe95f91700b
+- transformers-compat-0.6.5@sha256:50b00c57bf3fc379ec2477bfc261a2aebc983084488478adb29854f193af4696
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
@@ -75,4 +81,4 @@ extra-deps:
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
-
+allow-newer: true
