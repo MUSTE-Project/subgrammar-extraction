@@ -1,6 +1,6 @@
 module Subgrammar.GFRule where
 
-import PGF
+import Subgrammar.Common
 import Data.Maybe
 import Data.List
 import qualified Data.Map.Lazy as Map
@@ -8,26 +8,8 @@ import Control.Monad.LPMonad
 import Data.LinearProgram
 import Data.LinearProgram.GLPK
 
--- Used for writing grammars
-import qualified GF.Grammar.Canonical
-import qualified GF
-import GF.Support
-import System.FilePath
-import System.Directory
-import Canonical
-
-type Example = String
-type Forest = [Tree]
-data Grammar = Grammar { pgf :: PGF, concs :: [FilePath]} -- The PGF and file pathes to all concrete syntaxes
-data Formula = Variable String | Conj [Formula] | Disj [Formula] | Neg Formula | Imp Formula Formula deriving (Show)
-data Problem = Problem { trees :: [(String,[String])], rules :: [String] , formula :: LPM String Int ()}
-type Solution = (Double,[String])
 data ObjectiveFunction = OF { fun :: Problem -> ObjectiveFunc String Int, direction :: Direction }
-
--- Given a grammar translate an example into a set of syntax trees
-examplesToForest :: Grammar -> Language -> [Example] -> [Forest]
-examplesToForest grammar language examples =
-  [parse (pgf grammar) language (startCat $ pgf grammar) example | example <- examples]
+data Problem = Problem { trees :: [(String,[String])], rules :: [String] , formula :: LPM String Int ()}
 
 -- Translate a list of forests into a constraint problem
 forestsToProblem :: [Forest] -> Problem
@@ -36,9 +18,6 @@ forestsToProblem forests =
   let
     -- helper to add consequtive numbers
     numbered = zip [1..]
-    -- helper to convert a tree to a list of rules
-    flatten :: Tree -> [String]
-    flatten tree = maybe [] (\(f,ts) -> (show $ showCId f):(concatMap flatten ts)) $ unApp tree
     -- add sentence number to forests
     nForests =  numbered forests
     -- list of all sentences with all their trees
@@ -62,7 +41,6 @@ forestsToProblem forests =
           [setVarKind t BinVar | t <- trees] ++
           [setVarKind r BinVar | r <- rules]
 
-
 numTrees :: ObjectiveFunction
 numTrees = OF numTreesOF Max
   where
@@ -78,24 +56,3 @@ solve problem (OF fun direction) =
         setObjective (fun problem)
         formula problem
     return $ maybe (-1,[]) (\(val,vars) -> (val,[var | (var,vval) <- Map.toList vars,vval == 1])) solution
-
-generateGrammar :: Grammar -> Solution -> IO Grammar
-generateGrammar grammar solution =
-  do
-    -- read old concrete syntax
-    (utc,(concname,gfgram)) <- GF.batchCompile noOptions $ concs grammar
-    let absname = GF.srcAbsName gfgram concname
-        canon = GF.grammar2canonical noOptions absname gfgram
-        -- filter the grammar
-        canon' = filterGrammar (snd solution) canon
-        -- rename the grammar
-        canon'' = renameGrammar (getAbsName canon ++ "Sub") canon'
-        concs' = getConcNames canon''
-  -- write new concrete syntax
-    outdir <- fst <$> splitFileName <$> (canonicalizePath $ head $ concs grammar)
-    writeGrammar outdir canon''
-  -- compile new pgf
---    GF.compileToPGF 
-  -- load new pgf
-    grammar' <- readPGF undefined
-    return $ Grammar grammar' concs'
