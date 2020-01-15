@@ -55,7 +55,8 @@ getConcNames (Grammar _ concs) =
 -- | Function to filter out rules that are not in a list of allowed ones
 filterGrammar :: [String] -> CanonicalGrammar -> CanonicalGrammar
 filterGrammar funs (Grammar abs concs) =
-  Grammar (filterAbstract funs abs) $ map (filterConcrete funs) concs
+  Grammar (filterAbstract funs abs)
+    $ map (filterConcrete funs) concs
   where
     filterAbstract funs (Abstract id flags cats absfuns) =
       Abstract id flags cats [f | f <- absfuns, let (FunDef (FunId fname) _) = f, fname `elem` funs]

@@ -7,6 +7,7 @@ import GF.Support
 import System.FilePath
 import System.Directory
 import Canonical
+import System.FilePath((</>),(<.>))
 
 type Example = String
 type Forest = [Tree]
@@ -15,19 +16,27 @@ data Formula = Variable String | Conj [Formula] | Disj [Formula] | Neg Formula |
 type Solution = (Double,[String])
 
 -- Given a grammar translate an example into a set of syntax trees
-examplesToForest :: Grammar -> Language -> [Example] -> [Forest]
-examplesToForest grammar language examples =
+examplesToForests :: Grammar -> Language -> [Example] -> [Forest]
+examplesToForests grammar language examples =
   [parse (pgf grammar) language (startCat $ pgf grammar) example | example <- examples]
 
 -- helper to convert a tree to a list of rules
 flatten :: Tree -> [String]
-flatten tree = maybe [] (\(f,ts) -> (show $ showCId f):(concatMap flatten ts)) $ unApp tree
+flatten tree = maybe [] (\(f,ts) -> (showCId f):(concatMap flatten ts)) $ unApp tree
 
 generateGrammar :: Grammar -> Solution -> IO Grammar
 generateGrammar grammar solution =
   do
     -- read old concrete syntax
-    (utc,(concname,gfgram)) <- GF.batchCompile noOptions $ concs grammar
+    let options = modifyFlags (\f -> f { optLibraryPath = [
+                                           "."
+                                         , "/home/herb/src/foreign/gf/gf-rgl/src"
+                                         , "/home/herb/src/foreign/gf/gf-rgl/src/abstract"
+                                         , "/home/herb/src/foreign/gf/gf-rgl/src/english"
+                                         , "/home/herb/src/foreign/gf/gf-rgl/src/common"
+                                         , "/home/herb/src/foreign/gf/gf-rgl/src/prelude"
+                                         ]})
+    (utc,(concname,gfgram)) <- GF.batchCompile options $ concs grammar
     let absname = GF.srcAbsName gfgram concname
         canon = GF.grammar2canonical noOptions absname gfgram
         -- filter the grammar
@@ -35,11 +44,12 @@ generateGrammar grammar solution =
         -- rename the grammar
         canon'' = renameGrammar (getAbsName canon ++ "Sub") canon'
         concs' = getConcNames canon''
-  -- write new concrete syntax
+    -- write new concrete syntax
     outdir <- fst <$> splitFileName <$> (canonicalizePath $ head $ concs grammar)
-    writeGrammar outdir canon''
-  -- compile new pgf
---    GF.compileToPGF 
-  -- load new pgf
-    grammar' <- readPGF undefined
-    return $ Grammar grammar' concs'
+    let outdir' = outdir </> "sub"
+    writeGrammar outdir' canon''
+    -- compile and load new pgf
+    pgf' <- GF.compileToPGF options [outdir' </> c <.> "gf" | c <- concs']
+    let options' = modifyFlags (\f -> f { optOutputDir = Just outdir' })
+    GF.writePGF options' pgf'
+    return $ Grammar pgf' concs'
