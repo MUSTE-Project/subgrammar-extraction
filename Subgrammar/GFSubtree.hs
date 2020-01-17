@@ -2,6 +2,7 @@ module Subgrammar.GFSubtree where
 
 import PGF
 import Data.List
+
 import Debug.Trace
 {-
       f
@@ -25,76 +26,97 @@ testTree =
   mkApp (mkCId "f") [mkApp (mkCId "g") [mkApp (mkCId "i") []],mkApp (mkCId "h") []]
 
 t2 = mkApp (mkCId "f") [mkApp (mkCId "g") [],mkApp (mkCId "h") []]
+
 type Subtree = [String]
 type Subtrees = [Subtree]
-
-treeToSubtrees :: Tree -> Int -> [Subtrees]
-treeToSubtrees tree depth = undefined
---  subsequences $ treeToList tree
-  -- nub $ map sort $ treeToSubtrees' depth [root] children
-  -- where
-  --   (root,children) = decompose tree
--- treeToSubtrees' :: Int -> Subtree -> [Tree] -> [Subtrees]
--- treeToSubtrees' depth subtree [] = [[subtree]]
--- treeToSubtrees' depth subtree trees
--- --  | length subtree == depth = concatMap (map (subtree:)) [ treeToSubtrees' depth [c] (updateTrees trees t nts)| t <- trees, let (c,nts) = decompose t]
---   | otherwise =
---   concat [ treeToSubtrees' depth (c:subtree) uts -- ++ map (subtree:) (treeToSubtrees' depth [c] uts)
---          | t <- trees, let (c,nts) = decompose t, let uts = (updateTrees trees t nts)]
-  -- ++
-  -- concatMap (map (subtree:)) [ treeToSubtrees' depth [c] (updateTrees trees t nts)| t <- trees, let (c,nts) = decompose t]
--- treeToSubtrees' depth subtree trees
---   | null trees  = [[reverse subtree]]
---   | length subtree == depth =
---     treeToSubtrees'' depth subtree trees
---   | otherwise =
---     let sts = [(c:subtree,updateTrees trees t nts)| t <- trees, let (c,nts) = decompose t] in
---       treeToSubtrees'' depth subtree trees ++
---       concatMap (\(c,ts) -> treeToSubtrees' 3 c ts) sts              
---           -- concat [ treeToSubtrees' depth (c:subtree) (updateTrees trees t nts)| t <- trees, let (c,nts) = decompose t]
---   where
---     treeToSubtrees'' depth subtree trees =
---       concatMap (map ((reverse subtree):))
---       [treeToSubtrees' depth [c] (updateTrees trees t nts)| t <- trees, let (c,nts) = decompose t]
-updateTrees (t:ts) t' nts
-  | t == t' = nts ++ ts
-  | otherwise = t:(updateTrees ts t' nts)
-updateTrees [] _ _ = []
 
 destruct :: Tree -> (String,[Tree])
 destruct = maybe ("_",[]) (\(c,ts) -> (showCId c,ts)) . unApp   
                      
-dfs :: Tree -> [String]
-dfs t = c:(concat [dfs t' | t' <- ts])
+data SimpleTree = Empty | Node String [SimpleTree]
+
+instance Show SimpleTree where
+  show Empty = "()"
+  show (Node n []) = n
+  show (Node n ts) = "(" ++ n ++ " " ++ concatMap show ts ++ ") "
+  
+treeToSimpleTree :: Tree -> SimpleTree
+treeToSimpleTree t =
+  let (n,ts) = destruct t
+  in
+    Node n (map treeToSimpleTree ts)
+
+
+getSimpleCat :: SimpleTree -> String
+getSimpleCat Empty = ""
+getSimpleCat (Node n _) = n
+
+getSimpleSubtrees :: SimpleTree -> [SimpleTree]
+getSimpleSubtrees Empty = []
+getSimpleSubtrees (Node _ ts) = ts
+
+simpleBfs :: SimpleTree -> [String]
+simpleBfs Empty = []
+simpleBfs (Node n ts) =
+  filter (not . null) $ n:(map getSimpleCat ts) ++ (concatMap simpleBfs $ concatMap getSimpleSubtrees ts)
+
+type Path = [Int]
+
+getAllPathes :: SimpleTree -> [Path]
+getAllPathes t =
+  let
+    pathes Empty = []
+    pathes (Node _ []) = []
+    pathes (Node _ ts) =
+      let zips = zip [0..] ts in
+      [[c]|(c,_) <- zips] ++ concatMap (\(p,c) -> map (p:) $ pathes c) zips
+  in
+    pathes t
+
+-- | Removes a branch at a given path and returns both the removed subtree and the new tree
+deleteBranch :: SimpleTree -> Path -> (SimpleTree,SimpleTree)
+-- with empty tree do nothing
+deleteBranch Empty _ = (Empty,Empty)
+-- walk down the path
+-- End of the path
+deleteBranch oldTree@(Node n trees) [pos]
+  | pos >= 0 && pos < length trees =  -- subtree must exist
+    let
+      subTree = trees !! pos
+    in
+      (subTree,Node n (trees !!= (pos,Empty)))
+  | otherwise = (Empty,oldTree) -- if branch does not exist just do nothing
+deleteBranch oldTree@(Node n trees) (pos:ps)
+  | pos >= 0 && pos < length trees =  -- subtree must exist
+    let
+      subTree = trees !! pos
+      (branch,newTree) = deleteBranch subTree ps
+    in
+      (branch,Node n (trees !!= (pos,newTree)))
+  | otherwise = (Empty,oldTree) -- if branch does not exist just do nothing
+deleteBranch oldTree [] =
+  (Empty,oldTree) -- at empty path do nothing
+
+(!!=) :: [a] -> (Int,a) -> [a]
+(!!=) l (pos,el) =
+  let 
+  (pre,post) = splitAt pos l
+  in
+    pre ++ el:(tail post)
+  
+subtrees :: SimpleTree -> [Subtrees]
+subtrees tree =
+  let
+    pathes = getAllPathes tree
+    -- get all subsets and sort by longest path first
+    combinations = map (sortBy (\a b -> compare (length b) (length a))) $ subsequences pathes
+  in
+    map (map simpleBfs) $ map (subtrees' tree) combinations
   where
-    (c,ts) = destruct t
-
-bfs :: Tree -> [String]
-bfs t = 
-  [c] ++ map fst dcs ++ (concatMap (concatMap bfs . snd) dcs)
-    where
-    (c,ts) = destruct t
-    dcs = [(c',ts') | t' <- ts, let (c',ts') = destruct t']
-
-subtrees :: ([[String]],[String],[Tree]) -> [[[String]]]
-subtrees p = -- trace (show p) $
-  subtrees' p
-subtrees' ([],[],[]) = []
-subtrees' (sts,[],[]) = [sts]
-subtrees' (sts,st,[]) = subtrees (sts ++ [st],[],[])
-subtrees' ([], [],(t:ts)) =
-  let (c,ts') = destruct t in
-    subtrees ([],[c],ts') ++ subtrees ([],[],ts)
-subtrees' (sts,[],(t:ts)) =
-  subtrees (sts,[c],(ts'++ts))
-  where
-    (c,ts') = destruct t
-subtrees' (sts,st,(t:ts)) =
-  subtrees (sts ++ [st],[],(t:ts)) ++
-  subtrees (sts,st ++ [c],ts'++ts)
-  where (c,ts') = destruct t
-    
-f :: Tree -> [[[String]]]
-
-f' :: [Tree] ->
-f' (t:ts) = [(t':ts´) | 
+    subtrees' :: SimpleTree -> [Path] -> [SimpleTree]
+    subtrees' tree [] = [tree]
+    subtrees' tree (p:ps) =
+      let
+        (branch,newTree) = deleteBranch tree p
+      in
+        branch:subtrees' newTree ps
