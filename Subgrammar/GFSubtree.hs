@@ -2,6 +2,13 @@ module Subgrammar.GFSubtree where
 
 import PGF
 import Data.List
+import Data.Maybe
+
+import Subgrammar.Common
+
+import Control.Monad.LPMonad
+import Data.LinearProgram
+
 
 import Debug.Trace
 {-
@@ -103,9 +110,10 @@ deleteBranch oldTree [] =
   (pre,post) = splitAt pos l
   in
     pre ++ el:(tail post)
-  
-subtrees :: SimpleTree -> [Subtrees]
-subtrees tree =
+
+-- | Computes all subtrees of a simple tree
+allSubtrees :: SimpleTree -> [Subtrees]
+allSubtrees tree =
   let
     pathes = getAllPathes tree
     -- get all subsets and sort by longest path first
@@ -120,3 +128,37 @@ subtrees tree =
         (branch,newTree) = deleteBranch tree p
       in
         branch:subtrees' newTree ps
+
+-- | Only collects subtrees up to a certain size
+sizedSubtrees :: SimpleTree -> Int -> [Subtrees]
+sizedSubtrees tree size =
+  let
+    pathes = getAllPathes tree
+    -- get all subsets and sort by longest path first
+    combinations = map (sortBy (\a b -> compare (length b) (length a))) $ subsequences pathes
+  in
+    map (map simpleBfs) $ catMaybes $ map (subtrees' tree size)  combinations
+  where
+    subtrees' :: SimpleTree -> Int -> [Path] -> Maybe [SimpleTree]
+    subtrees' tree size []
+      | simpleSize tree <= size = Just [tree]
+      | otherwise = Nothing
+    subtrees' tree msize (p:ps) =
+      let
+        (branch,newTree) = deleteBranch tree p
+      in
+        if simpleSize branch <= size then fmap (branch:) (subtrees' newTree size ps) else Nothing
+
+-- | Size of a SimpleTree
+simpleSize :: SimpleTree -> Int
+simpleSize = length . simpleBfs
+
+-- | Filters all possible subtrees by maximum size
+maxSizeSubtrees :: SimpleTree -> Int -> [Subtrees]
+maxSizeSubtrees tree size =
+  let
+    all = allSubtrees tree
+  in
+    [split | split <- all, maximum (map length split) <= size]
+    
+
