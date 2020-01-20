@@ -8,6 +8,13 @@ import System.FilePath
 import System.Directory
 import Canonical
 import System.FilePath((</>),(<.>))
+import Filesystem (isDirectory)
+import Control.Monad.LPMonad
+import Data.LinearProgram
+import Data.LinearProgram.GLPK
+import qualified Data.Map.Lazy as Map
+
+import System.Clock
 
 type Example = String
 type Forest = [Tree]
