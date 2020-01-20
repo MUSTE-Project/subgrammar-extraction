@@ -5,6 +5,7 @@ import Data.Maybe
 import Data.List
 import Control.Monad.LPMonad
 import Data.LinearProgram
+import System.FilePath((</>),(<.>))
 
 import PGF
 
@@ -48,19 +49,20 @@ test :: IO ()
 test = do
   -- load grammar
   putStrLn ">>> Load grammar"
-  p <- readPGF "/tmp/Exemplum/Exemplum.pgf"
-  let grammar = Grammar p ["/tmp/Exemplum/ExemplumEng.gf"]
+  p <- readPGF $ path_to_exemplum</>"Exemplum.pgf"
+  let grammar = Grammar p [path_to_exemplum</>"ExemplumEng.gf"]
   putStrLn $ ">>> Loaded " ++ (show $ length $ functions p) ++ " Rules"
   -- convert examples
   putStrLn ">>> Convert examples to forests"
   let forests = examplesToForests grammar (fromJust $ readLanguage "ExemplumEng") examples
   -- create csp
   putStrLn ">>> Convert forests to CSP"
-  let problem = forestsToProblem forests
+  let problem = forestsToProblem forests numTrees
   putStrLn $ ">>> Got problem:\n" ++ show problem
+  writeLP "/tmp/problem.lp" problem
   -- solve problem
   putStrLn ">>> Solve the CSP"
-  solution <- solve problem numTrees
+  solution <- solve problem
   putStrLn $ ">>> Got " ++ (show $ length $ snd solution) ++ " rules with a score of " ++ (show $ fst solution) ++ ": \n" ++ show (snd solution)
   -- create new grammar
   putStrLn ">>> Create New Grammar"

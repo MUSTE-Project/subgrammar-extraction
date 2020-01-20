@@ -34,6 +34,10 @@ data ObjectiveFunction a = OF { fun :: [(String,[(String,a)])] -> ObjectiveFunc 
 -- | A problem contains trees, rules and a linear programming logical formula
 type Problem = LP String Int -- Problem { trees :: [(String,[String])], rules :: [String] , formula :: LPM String Int ()}
 
+-- Constants -> Have to be updated
+path_to_exemplum = "/tmp/Exemplum/"
+rgl_path = "/home/herb/src/foreign/gf/gf-rgl/src"
+subdirs = "abstract common prelude english"
 
 -- | Objective function counting the number of trees
 numTrees :: ObjectiveFunction a
@@ -58,8 +62,6 @@ examplesToForests grammar language examples =
 generateGrammar :: Grammar -> Solution -> IO Grammar
 generateGrammar grammar solution =
   do
-    let rgl_path = "/home/herb/src/foreign/gf/gf-rgl/src"
-    let subdirs = "abstract common prelude english"
     let lib_path = ".":rgl_path:[rgl_path</>subdir | subdir <- words subdirs] :: [FilePath]
     putStrLn $ "###" ++ show lib_path
     -- read old concrete syntax
@@ -75,7 +77,8 @@ generateGrammar grammar solution =
         concs' = getConcNames canon''
     -- write new concrete syntax
     outdir <- fst <$> splitFileName <$> (canonicalizePath $ head $ concs grammar)
-    let outdir' = outdir </> "sub"
+    let outdir' = outdir </> "subgrammar"
+    createDirectoryIfMissing True outdir'
     writeGrammar outdir' canon''
     -- compile and load new pgf
     pgf' <- GF.compileToPGF options [outdir' </> c <.> "gf" | c <- concs']

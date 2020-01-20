@@ -8,6 +8,7 @@ import Subgrammar.Common
 
 import Control.Monad.LPMonad
 import Data.LinearProgram
+import System.FilePath((</>),(<.>))
 
 -- import Control.Monad (guard)
 
@@ -263,50 +264,54 @@ test :: IO ()
 test = do
   -- load grammar
   putStrLn ">>> Load grammar"
-  p <- readPGF "/tmp/Exemplum/Exemplum.pgf"
-  let grammar = Grammar p ["/tmp/Exemplum/ExemplumEng.gf"]
+  p <- readPGF $ path_to_exemplum</>"Exemplum.pgf"
+  let grammar = Grammar p [path_to_exemplum</>"ExemplumEng.gf"]
   putStrLn $ ">>> Loaded " ++ (show $ length $ functions p) ++ " Rules"
   -- convert examples
   putStrLn ">>> Convert examples to forests"
   let forests = examplesToForests grammar (fromJust $ readLanguage "ExemplumEng") examples
   -- create csp
   putStrLn ">>> Convert forests to CSP"
-  let problem = forestsToProblem forests 3
-  putStrLn $ ">>> Got problem:\n" -- ++ show problem
+  let problem = forestsToProblem forests 2 numTrees
+  putStrLn $ ">>> Got problem:\n" ++ show problem
+  writeLP "/tmp/problem.lp" problem
   -- solve problem
   putStrLn ">>> Solve the CSP"
-  solution <- solve problem numTrees
+  solution <- solve problem
   putStrLn $ ">>> Got " ++ (show $ length $ snd solution) ++ " rules with a score of " ++ (show $ fst solution) ++ ": \n" ++ show (snd solution)
-  -- -- create new grammar
-  -- putStrLn ">>> Create New Grammar"
-  -- grammar' <- generateGrammar grammar solution
-  -- putStrLn $ ">>> Loaded " ++ (show $ length $ functions $ pgf grammar') ++ " Rules"
-  -- -- check result
-  -- let test = testExamples grammar' (fromJust $ readLanguage "ExemplumSubEng") examples
-  -- if (and $ map snd test)  then
-  --   putStrLn ">>> Success!!!"
-  -- else
-  --   putStrLn $ ">>> Failed covering:\n" ++ (unlines $ map fst $ filter (not . snd) test)
+  -- create new grammar
+  putStrLn ">>> Create New Grammar"
+  -- Converting solution
+  let splitted = (fst solution,concat [split "#" r|r <- snd solution])
+  putStrLn $ ">>> Splitted rules " ++ show splitted
+  grammar' <- generateGrammar grammar splitted
+  putStrLn $ ">>> Loaded " ++ (show $ length $ functions $ pgf grammar') ++ " Rules"
+  -- check result
+  let test = testExamples grammar' (fromJust $ readLanguage "ExemplumSubEng") examples
+  if (and $ map snd test)  then
+    putStrLn ">>> Success!!!"
+  else
+    putStrLn $ ">>> Failed covering:\n" ++ (unlines $ map fst $ filter (not . snd) test)
   where
     examples = [
-      -- "few bad fathers become big",
-      -- "now John and Paris aren't good now",
-      -- "many cold books come today",
-      -- "now Paris and he today don't read few cold mothers",
-      -- "it is blue",
-      -- "they don't love every mother",
-      -- "now it doesn't become blue in John",
-      -- "John becomes cold",
-      -- "it doesn't come",
-      -- "on Paris now Paris comes",
-      -- "now the bad cold fathers are big",
-      -- "today she doesn't read Paris now now",
-      -- "every computer doesn't break many mothers now",
-      -- "Paris doesn't switch on it now today now",
-      -- "today to it they become good now",
-      -- "many fathers today on Paris don't hit many mothers",
-      -- "to Paris on it today they don't close her now",
-      -- "Paris isn't good today today",
+      "few bad fathers become big"
+      "now John and Paris aren't good now",
+      "many cold books come today",
+      "now Paris and he today don't read few cold mothers",
+      "it is blue",
+      "they don't love every mother",
+      "now it doesn't become blue in John",
+      "John becomes cold",
+      "it doesn't come",
+      "on Paris now Paris comes",
+      "now the bad cold fathers are big",
+      "today she doesn't read Paris now now",
+      "every computer doesn't break many mothers now",
+      "Paris doesn't switch on it now today now",
+      "today to it they become good now",
+      "many fathers today on Paris don't hit many mothers",
+      "to Paris on it today they don't close her now",
+      "Paris isn't good today today",
       "it becomes bad already",
       "they don't break her today already today"
       ]
