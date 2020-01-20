@@ -10,6 +10,9 @@ import Data.LinearProgram.GLPK
 
 import PGF
 
+-- | Converts a GF tree to a list of rules
+flatten :: Tree -> [String]
+flatten tree = maybe [] (\(f,ts) -> (showCId f):(concatMap flatten ts)) $ unApp tree
 data ObjectiveFunction = OF { fun :: Problem -> ObjectiveFunc String Int, direction :: Direction }
 data Problem = Problem { trees :: [(String,[String])], rules :: [String] , formula :: LPM String Int ()}
 

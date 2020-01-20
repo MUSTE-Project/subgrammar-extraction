@@ -20,10 +20,6 @@ examplesToForests :: Grammar -> Language -> [Example] -> [Forest]
 examplesToForests grammar language examples =
   [parse (pgf grammar) language (startCat $ pgf grammar) example | example <- examples]
 
--- helper to convert a tree to a list of rules
-flatten :: Tree -> [String]
-flatten tree = maybe [] (\(f,ts) -> (showCId f):(concatMap flatten ts)) $ unApp tree
-
 generateGrammar :: Grammar -> Solution -> IO Grammar
 generateGrammar grammar solution =
   do
