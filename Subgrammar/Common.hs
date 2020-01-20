@@ -27,15 +27,13 @@ flatten tree = maybe [] (\(f,ts) -> (showCId f):(concatMap flatten ts)) $ unApp 
 generateGrammar :: Grammar -> Solution -> IO Grammar
 generateGrammar grammar solution =
   do
+    let rgl_path = "/home/herb/src/foreign/gf/gf-rgl/src"
+    let subdirs = "abstract common prelude english"
+    let lib_path = ".":rgl_path:[rgl_path</>subdir | subdir <- words subdirs] :: [FilePath]
+    putStrLn $ "###" ++ show lib_path
     -- read old concrete syntax
-    let options = modifyFlags (\f -> f { optLibraryPath = [
-                                           "."
-                                         , "/home/herb/src/foreign/gf/gf-rgl/src"
-                                         , "/home/herb/src/foreign/gf/gf-rgl/src/abstract"
-                                         , "/home/herb/src/foreign/gf/gf-rgl/src/english"
-                                         , "/home/herb/src/foreign/gf/gf-rgl/src/common"
-                                         , "/home/herb/src/foreign/gf/gf-rgl/src/prelude"
-                                         ]})
+    let options = modifyFlags (\f -> f { optLibraryPath = lib_path
+                                       })
     (utc,(concname,gfgram)) <- GF.batchCompile options $ concs grammar
     let absname = GF.srcAbsName gfgram concname
         canon = GF.grammar2canonical noOptions absname gfgram
