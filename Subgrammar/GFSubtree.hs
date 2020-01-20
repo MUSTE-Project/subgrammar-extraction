@@ -164,6 +164,56 @@ maxSizeSubtrees tree size =
     [split | split <- all, maximum (map length split) <= size]
     
 
+{-
+Code to just look at all possible subtrees, not just valid segmentations
+
+data PruneOpts = PruneOpts
+  { pruneDepth :: Maybe Int
+  , pruneSize  :: Maybe Int
+  } deriving Show
+
+emptyPruneOpts :: PruneOpts
+emptyPruneOpts = PruneOpts Nothing Nothing
+
+
+splitAndPrune :: PruneOpts -> SimpleTree -> [(SimpleTree, Path, SimpleTree, [SimpleTree])]
+splitAndPrune opts base_tree =
+    do (adj_path, split_tree) <- splitBaseTree base_tree
+       (adj_tree, pruned_children) <- getPrunedTrees opts split_tree
+       return (base_tree, adj_path, adj_tree, pruned_children)
+
+splitBaseTree :: SimpleTree -> [(Path, SimpleTree)]
+splitBaseTree tree@(Node _ children)
+    = ([], tree) : [ (n:path, tree') |
+                     (n, child) <- zip [0..] children,
+                     (path, tree') <- splitBaseTree child ]
+splitBaseTree _ = error "Muste.Prune.splitBaseTree: Non-exhaustive pattern match"
+
+
+getPrunedTrees :: PruneOpts -> SimpleTree -> [(SimpleTree, [SimpleTree])]
+getPrunedTrees (PruneOpts depthLimit sizeLimit) tree 
+    = [ (tree, branches) | (tree, branches, _) <- pruneTs tree [] 0 0 ]
+    where pruneTs :: SimpleTree -> [SimpleTree] -> Int -> Int -> [(SimpleTree, [SimpleTree], Int)]
+          pruneTs tree@(Node fun children) branches depth size 
+              = (Empty, tree:branches, size) :
+                do guard $ depth `less` depthLimit && size `less` sizeLimit
+                   (children', branches', size') <- pruneCs children branches (depth+1) (size+1) 
+                   return (Node fun children', branches', size')
+          pruneTs tree branches _depth size 
+              = [(tree, branches, size)]
+
+          pruneCs :: [SimpleTree] -> [SimpleTree] -> Int -> Int -> [([SimpleTree], [SimpleTree], Int)]
+          pruneCs [] branches _depth size = return ([], branches, size)
+          pruneCs (tree:trees) branches depth size 
+              = do (tree', branches', size') <- pruneTs tree branches depth size 
+                   (trees', branches'', size'') <- pruneCs trees branches' depth size' 
+                   return (tree':trees', branches'', size'')
+
+          value `less` Just limit = value < limit
+          _     `less` Nothing    = True
+
+  
+-}
   
 -- | Translate a list of forests into a constraint problem given a maximum subtree size
 forestsToProblem :: [Forest] -> Int -> Problem
