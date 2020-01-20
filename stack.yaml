@@ -60,6 +60,9 @@ extra-deps:
 - json-0.9.3@sha256:4557a1db3cb2ff80c4df9e30181ad324b97fe569a27b13a444cc056db0e31547
 - parallel-3.2.2.0@sha256:924dc6f8ac94d535689070b96864da0913aee99d8e3354f9130e4d96d5b17328
 - syb-0.7.1@sha256:8d37b1e4d04a9aa8512dc6c2a06e02afc015a2fd3e735bdfeeacb5e2e853323c
+- system-fileio-0.3.16.4
+- system-filepath-0.4.14
+- clock-0.8
 # Override default flag values for local packages and extra-deps
 flags:
   gf:
