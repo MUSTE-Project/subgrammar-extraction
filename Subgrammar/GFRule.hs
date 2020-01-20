@@ -3,23 +3,14 @@ module Subgrammar.GFRule where
 import Subgrammar.Common
 import Data.Maybe
 import Data.List
-import qualified Data.Map.Lazy as Map
 import Control.Monad.LPMonad
 import Data.LinearProgram
-import Data.LinearProgram.GLPK
 
 import PGF
 
 -- | Converts a GF tree to a list of rules
 flatten :: Tree -> [String]
 flatten tree = maybe [] (\(f,ts) -> (showCId f):(concatMap flatten ts)) $ unApp tree
-data ObjectiveFunction = OF { fun :: Problem -> ObjectiveFunc String Int, direction :: Direction }
-data Problem = Problem { trees :: [(String,[String])], rules :: [String] , formula :: LPM String Int ()}
-
-instance Show Problem where
-  show p = showProblem p
-showProblem :: Problem -> String
-showProblem (Problem ts rs f) = "Problem { trees = " ++ show ts ++ ", rules = " ++ show rs ++ ", ++ formula = " ++ (show $ execLPM f) ++ "}"
   
 -- Translate a list of forests into a constraint problem
 forestsToProblem :: [Forest] -> Problem
@@ -49,23 +40,6 @@ forestsToProblem forests =
           [setVarKind s BinVar | s <- sentences] ++
           [setVarKind t BinVar | t <- trees] ++
           [setVarKind r BinVar | r <- rules]
-
-numTrees :: ObjectiveFunction
-numTrees = OF numTreesOF Max
-  where
-    numTreesOF :: Problem -> ObjectiveFunc String Int
-    numTreesOF (Problem trees _ _) = linCombination [(1,t) | (s,ts) <- trees,t <- ts]
-    
-solve :: Problem -> ObjectiveFunction -> IO Solution
-solve problem (OF fun direction) =
-  do
-    let lp = execLPM $
-          do
-            setDirection direction
-            setObjective (fun problem)
-            formula problem
-    (code,solution) <- glpSolveVars simplexDefaults lp
-    return $ maybe (-1,[]) (\(val,vars) -> (val,[var | (var,vval) <- Map.toList vars,vval == 1])) solution
 
 test :: IO ()
 test = do

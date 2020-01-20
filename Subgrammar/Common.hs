@@ -15,6 +15,37 @@ data Grammar = Grammar { pgf :: PGF, concs :: [FilePath]} -- The PGF and file pa
 data Formula = Variable String | Conj [Formula] | Disj [Formula] | Neg Formula | Imp Formula Formula deriving (Show)
 type Solution = (Double,[String])
 
+-- | An objective function is a combination of a function and a direction
+data ObjectiveFunction = OF { fun :: Problem -> ObjectiveFunc String Int, direction :: Direction }
+
+-- | A problem contains trees, rules and a linear programming logical formula
+data Problem = Problem { trees :: [(String,[String])], rules :: [String] , formula :: LPM String Int ()}
+
+instance Show Problem where
+  show p = showProblem p
+
+showProblem :: Problem -> String
+showProblem (Problem ts rs f) = "Problem { trees = " ++ show ts ++ ", rules = " ++ show rs ++ ", ++ formula = " ++ (show $ execLPM f) ++ "}"
+
+-- | Objective function counting the number of trees
+numTrees :: ObjectiveFunction
+numTrees = OF numTreesOF Max
+  where
+    numTreesOF :: Problem -> ObjectiveFunc String Int
+    numTreesOF (Problem trees _ _) = linCombination [(1,t) | (s,ts) <- trees,t <- ts]
+
+-- | Solves a problem using a given objective function
+solve :: Problem -> ObjectiveFunction -> IO Solution
+solve problem (OF fun direction) =
+  do
+    let lp = execLPM $
+          do
+            setDirection direction
+            setObjective (fun problem)
+            formula problem
+    (code,solution) <- glpSolveVars simplexDefaults lp
+    return $ maybe (-1,[]) (\(val,vars) -> (val,[var | (var,vval) <- Map.toList vars,vval == 1])) solution
+
 -- Given a grammar translate an example into a set of syntax trees
 examplesToForests :: Grammar -> Language -> [Example] -> [Forest]
 examplesToForests grammar language examples =
