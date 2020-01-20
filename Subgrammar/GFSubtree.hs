@@ -32,10 +32,9 @@ import Debug.Trace
 ([],[],[(f (g i) h)])
 ([],[f],[(g i),h])
 -}
+
 testTree =
   mkApp (mkCId "f") [mkApp (mkCId "g") [mkApp (mkCId "i") []],mkApp (mkCId "h") []]
-
-t2 = mkApp (mkCId "f") [mkApp (mkCId "g") [],mkApp (mkCId "h") []]
 
 type Subtree = [String]
 type Subtrees = [Subtree]
@@ -340,13 +339,3 @@ test = do
     testExamples :: Grammar -> Language -> [Example] -> [(String,Bool)]
     testExamples g l es = 
       zip es $ map (not.null) $ examplesToForests g l es
-
-
-test' =
-  do
-    p <- readPGF "/tmp/Exemplum/Exemplum.pgf"
-    let t = head $ parse p (fromJust $ readLanguage "ExemplumEng") (startCat p) "few bad fathers become big"
-    return $ treeToSimpleTree t
-
-
-  
