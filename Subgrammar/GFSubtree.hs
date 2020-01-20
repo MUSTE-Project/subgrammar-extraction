@@ -45,8 +45,8 @@ data SimpleTree = Empty | Node String [SimpleTree]
 instance Show SimpleTree where
   show Empty = "()"
   show (Node n []) = n
-  show (Node n ts) = "(" ++ n ++ " " ++ concatMap show ts ++ ") "
-  
+  show (Node n ts) = "(" ++ n ++ concatMap show ts ++ ")"
+
 treeToSimpleTree :: Tree -> SimpleTree
 treeToSimpleTree t =
   let (n,ts) = destruct t
