@@ -12,7 +12,7 @@ import System.FilePath((</>),(<.>))
 type Example = String
 type Forest = [Tree]
 data Grammar = Grammar { pgf :: PGF, concs :: [FilePath]} -- The PGF and file pathes to all concrete syntaxes
-data Formula = Variable String | Conj [Formula] | Disj [Formula] | Neg Formula | Imp Formula Formula deriving (Show)
+
 type Solution = (Double,[String])
 
 -- | An objective function is a combination of a function and a direction
