@@ -16,10 +16,16 @@ import qualified Data.Map.Lazy as Map
 
 import System.Clock
 
+-- | Examples are strings
 type Example = String
+
+-- | Forests are lists of trees
 type Forest = [Tree]
+
+-- | A grammar is a combination of a pgf file and the pathes to the concrete syntaxes
 data Grammar = Grammar { pgf :: PGF, concs :: [FilePath]} -- The PGF and file pathes to all concrete syntaxes
 
+-- | A solution is the score of the optimal solution together with the list of included rules
 type Solution = (Double,[String])
 
 -- | An objective function is a combination of a function and a direction
@@ -53,11 +59,12 @@ solve problem (OF fun direction) =
     (code,solution) <- glpSolveVars simplexDefaults lp
     return $ maybe (-1,[]) (\(val,vars) -> (val,[var | (var,vval) <- Map.toList vars,vval == 1])) solution
 
--- Given a grammar translate an example into a set of syntax trees
+-- | Given a grammar translate an example into a set of syntax trees
 examplesToForests :: Grammar -> Language -> [Example] -> [Forest]
 examplesToForests grammar language examples =
   [parse (pgf grammar) language (startCat $ pgf grammar) example | example <- examples]
 
+-- | Function to create a new grammar from an old grammar and a solution
 generateGrammar :: Grammar -> Solution -> IO Grammar
 generateGrammar grammar solution =
   do

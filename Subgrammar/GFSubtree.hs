@@ -11,6 +11,7 @@ import Data.LinearProgram
 
 
 import Debug.Trace
+
 {-
       f
     /  \
@@ -37,9 +38,11 @@ t2 = mkApp (mkCId "f") [mkApp (mkCId "g") [],mkApp (mkCId "h") []]
 type Subtree = [String]
 type Subtrees = [Subtree]
 
+-- | Cuts a tree into root and subtrees
 destruct :: Tree -> (String,[Tree])
 destruct = maybe ("_",[]) (\(c,ts) -> (showCId c,ts)) . unApp   
-                     
+
+-- | Simple tree type
 data SimpleTree = Empty | Node String [SimpleTree]
 
 instance Show SimpleTree where
@@ -47,6 +50,7 @@ instance Show SimpleTree where
   show (Node n []) = n
   show (Node n ts) = "(" ++ n ++ concatMap show ts ++ ")"
 
+-- | Converts a GF tree into a SimpleTree
 treeToSimpleTree :: Tree -> SimpleTree
 treeToSimpleTree t =
   let (n,ts) = destruct t
@@ -58,11 +62,12 @@ getSimpleRoot :: SimpleTree -> String
 getSimpleRoot Empty = ""
 getSimpleRoot (Node n _) = n
 
-
+-- | Gets the subtrees of a simple tree
 getSimpleSubtrees :: SimpleTree -> [SimpleTree]
 getSimpleSubtrees Empty = []
 getSimpleSubtrees (Node _ ts) = ts
 
+-- | Breadth-first enumeration of all nodes
 simpleBfs :: SimpleTree -> [String]
 simpleBfs Empty = []
 simpleBfs (Node n ts) =
@@ -71,6 +76,7 @@ simpleBfs (Node n ts) =
 -- | Path in a tree
 type Path = [Int]
 
+-- | Gets all the pathes in a simple tree
 getAllPathes :: SimpleTree -> [Path]
 getAllPathes t =
   let
@@ -106,6 +112,7 @@ deleteBranch oldTree@(Node n trees) (pos:ps)
 deleteBranch oldTree [] =
   (Empty,oldTree) -- at empty path do nothing
 
+-- | Replaces a list item at a certain index
 (!!=) :: [a] -> (Int,a) -> [a]
 (!!=) l (pos,el) =
   let 

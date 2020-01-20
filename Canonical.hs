@@ -18,6 +18,7 @@ type CanonicalGrammar = GF.Grammar.Canonical.Grammar
 -- The 'FilePath' argument is the name of a subdirectory where the files will
 -- be written.
 
+-- | Write a grammar to file
 writeGrammar :: FilePath -> CanonicalGrammar -> IO ()
 writeGrammar prefix (Grammar abs cncs) =
   do createDirectoryIfMissing False prefix

@@ -41,6 +41,7 @@ forestsToProblem forests =
           [setVarKind t BinVar | t <- trees] ++
           [setVarKind r BinVar | r <- rules]
 
+-- | Test function
 test :: IO ()
 test = do
   -- load grammar
