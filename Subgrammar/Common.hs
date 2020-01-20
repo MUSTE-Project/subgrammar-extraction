@@ -51,3 +51,17 @@ generateGrammar grammar solution =
     let options' = modifyFlags (\f -> f { optOutputDir = Just outdir' })
     GF.writePGF options' pgf'
     return $ Grammar pgf' concs'
+
+-- | Helper function to time computations
+time :: IO () -> IO Integer
+time f =
+  do
+    putStrLn ">Timer> Start"
+    t1 <- getTime ProcessCPUTime
+    f
+    t2 <- getTime ProcessCPUTime
+    putStrLn ">Timer> Stop"
+    let diff = fromIntegral (sec $ diffTimeSpec t1 t2)
+    putStrLn $ ">Timer> Difference " ++ (show diff)
+    return diff
+    
