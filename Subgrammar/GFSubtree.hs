@@ -315,7 +315,7 @@ test = do
     putStrLn $ ">>> Failed covering:\n" ++ (unlines $ map fst $ filter (not . snd) test)
   where
     examples = [
-      "few bad fathers become big"
+      "few bad fathers become big",
       "now John and Paris aren't good now",
       "many cold books come today",
       "now Paris and he today don't read few cold mothers",
