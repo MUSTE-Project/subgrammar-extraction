@@ -53,10 +53,11 @@ treeToSimpleTree t =
   in
     Node n (map treeToSimpleTree ts)
 
+-- | Gets the root of a simple tree
+getSimpleRoot :: SimpleTree -> String
+getSimpleRoot Empty = ""
+getSimpleRoot (Node n _) = n
 
-getSimpleCat :: SimpleTree -> String
-getSimpleCat Empty = ""
-getSimpleCat (Node n _) = n
 
 getSimpleSubtrees :: SimpleTree -> [SimpleTree]
 getSimpleSubtrees Empty = []
@@ -65,8 +66,9 @@ getSimpleSubtrees (Node _ ts) = ts
 simpleBfs :: SimpleTree -> [String]
 simpleBfs Empty = []
 simpleBfs (Node n ts) =
-  filter (not . null) $ n:(map getSimpleCat ts) ++ (concatMap simpleBfs $ concatMap getSimpleSubtrees ts)
+  filter (not . null) $ n:(map getSimpleRoot ts) ++ (concatMap simpleBfs $ concatMap getSimpleSubtrees ts)
 
+-- | Path in a tree
 type Path = [Int]
 
 getAllPathes :: SimpleTree -> [Path]
