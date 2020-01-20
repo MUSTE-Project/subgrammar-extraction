@@ -44,6 +44,28 @@ type Subtrees = [Subtree]
 destruct :: Tree -> (String,[Tree])
 destruct = maybe ("_",[]) (\(c,ts) -> (showCId c,ts)) . unApp   
 
+{- | Taken from MissingH:Data.String.Utils:
+Given a delimiter and a list of items (or strings), join the items
+by using the delimiter.
+
+Example:
+
+> join "|" ["foo", "bar", "baz"] -> "foo|bar|baz"
+-}
+join :: [a] -> [[a]] -> [a]
+join delim l = concat (intersperse delim l)
+
+-- | Splits a list at a delimiter element
+split :: Eq a => [a] -> [a] -> [[a]]
+split delim l =
+  split' delim l []
+  where
+    split' _ [] [] = []
+    split' _ [] acc = [reverse acc]
+    split' delim l acc
+      | isPrefixOf delim l = (reverse acc):(split' delim (drop (length delim) l) [])
+      | otherwise = split' delim (tail l) (head l:acc)
+
 -- | Simple tree type
 data SimpleTree = Empty | Node String [SimpleTree]
 
