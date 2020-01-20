@@ -164,6 +164,38 @@ maxSizeSubtrees tree size =
     [split | split <- all, maximum (map length split) <= size]
     
 
+  
+-- | Translate a list of forests into a constraint problem given a maximum subtree size
+forestsToProblem :: [Forest] -> Int -> Problem
+forestsToProblem forests size = 
+  let
+    -- helper to add consequtive numbers
+    numbered = zip [1..]
+    -- add sentence number to forests
+    nForests =  numbered forests
+    -- list of all sentences with all their trees
+    sentenceTrees = [("s" ++ show sn, ["s" ++ show sn ++ "t" ++ show tn | (tn, t) <- numbered ts])| (sn,ts) <- nForests]
+    -- list of all trees with all their rules
+    treeRules = concat [[("s" ++ show sn ++ "t" ++ show tn,sizedSubtrees st size
+                           -- maxSizeSubtrees st size
+                         ) | (tn, t) <- numbered ts, let st = treeToSimpleTree t]| (sn,ts) <- nForests]
+    -- List of all sentence variables
+    sentences = map fst sentenceTrees
+    -- List of all tree variables
+    trees = concatMap snd sentenceTrees
+    -- List of all rule names
+    rules = nub $ map concat $ concat $ concat $ map snd treeRules 
+  in
+    Problem sentenceTrees rules $
+    do
+      geqTo (linCombination [(1,s) | s <- sentences]) $ length sentences
+      sequence_ [geqTo (linCombination ((-1,s):[(1,t) | t <- ts])) 0 | (s,ts) <- sentenceTrees]
+--      sequence_ [geqTo (linCombination ((-(length rs),t):[(1,r) | r <- rs])) 0 | (t,rs) <- treeRules]
+      sequence_ $
+        [setVarKind s BinVar | s <- sentences] ++
+        [setVarKind t BinVar | t <- trees]  ++
+        [setVarKind r BinVar | r <- rules]
+
 -- | Test function
 test :: IO ()
 test = do
