@@ -9,6 +9,7 @@ import Subgrammar.Common
 import Control.Monad.LPMonad
 import Data.LinearProgram
 
+-- import Control.Monad (guard)
 
 import Debug.Trace
 
