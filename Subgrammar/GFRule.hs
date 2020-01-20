@@ -13,30 +13,32 @@ flatten :: Tree -> [String]
 flatten tree = maybe [] (\(f,ts) -> (showCId f):(concatMap flatten ts)) $ unApp tree
   
 -- Translate a list of forests into a constraint problem
-forestsToProblem :: [Forest] -> Problem
-forestsToProblem forests = 
+forestsToProblem :: [Forest] -> ObjectiveFunction [String] -> Problem
+forestsToProblem forests (OF fun direction) = 
   let
     -- helper to add consequtive numbers
     numbered = zip [1..]
-    -- add sentence number to forests
-    nForests =  numbered forests
-    -- list of all sentences with all their trees
-    sentenceTrees = [("s" ++ show sn, ["s" ++ show sn ++ "t" ++ show tn | (tn, t) <- numbered ts])| (sn,ts) <- nForests]
-    -- list of all trees with all their rules
-    treeRules = concat [[("s" ++ show sn ++ "t" ++ show tn,flatten t) | (tn, t) <- numbered ts]| (sn,ts) <- nForests]
+    -- Hierarchy of tags for sentences, trees and rules
+    tags =   [(s_tag, [(t_tag,
+                        flatten t
+                       )
+                      | (tn,t) <- numbered ts,let t_tag = s_tag ++ "t" ++ show tn]
+              )
+             | (sn,ts) <- numbered forests, let s_tag = "s" ++ show sn] :: [(String,[(String,[String])])]
     -- List of all sentence variables
-    sentences = map fst sentenceTrees
+    sentences = map fst tags 
     -- List of all tree variables
-    trees = concatMap snd sentenceTrees
+    trees = [t | (s,ts) <- tags, (t,_) <- ts]
     -- List of all rule names
-    rules = concatMap snd treeRules 
+    rules = [r | (s,ts) <- tags, (t,ps) <- ts, (t,rs) <- ts, r <- rs]
   in
-    Problem sentenceTrees rules $
-      do
-        geqTo (linCombination [(1,s) | s <- sentences]) $ length sentences
-        sequence_ [geqTo (linCombination ((-1,s):[(1,t) | t <- ts])) 0 | (s,ts) <- sentenceTrees]
-        sequence_ [geqTo (linCombination ((-(length rs),t):[(1,r) | r <- rs])) 0 | (t,rs) <- treeRules]
-        sequence_ $
+    execLPM $ do
+      setDirection direction
+      setObjective (fun tags)
+      geqTo (linCombination [(1,s) | s <- sentences]) $ length sentences
+      sequence_ [geqTo (linCombination ((-1,s):[(1,t) | (t,_) <- ts])) 0 | (s,ts) <- tags]
+      sequence_ [geqTo (linCombination ((-(length rs),t):[(1,r) | r <- rs])) 0 | (s,ts) <- tags,(t,rs) <- ts]
+      sequence_ $
           [setVarKind s BinVar | s <- sentences] ++
           [setVarKind t BinVar | t <- trees] ++
           [setVarKind r BinVar | r <- rules]

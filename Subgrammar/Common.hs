@@ -29,35 +29,25 @@ data Grammar = Grammar { pgf :: PGF, concs :: [FilePath]} -- The PGF and file pa
 type Solution = (Double,[String])
 
 -- | An objective function is a combination of a function and a direction
-data ObjectiveFunction = OF { fun :: Problem -> ObjectiveFunc String Int, direction :: Direction }
+data ObjectiveFunction a = OF { fun :: [(String,[(String,a)])] -> ObjectiveFunc String Int, direction :: Direction }
 
 -- | A problem contains trees, rules and a linear programming logical formula
-data Problem = Problem { trees :: [(String,[String])], rules :: [String] , formula :: LPM String Int ()}
+type Problem = LP String Int -- Problem { trees :: [(String,[String])], rules :: [String] , formula :: LPM String Int ()}
 
-instance Show Problem where
-  show p = showProblem p
-
-showProblem :: Problem -> String
-showProblem (Problem ts rs f) = "Problem { trees = " ++ show ts ++ ", rules = " ++ show rs ++ ", ++ formula = " ++ (show $ execLPM f) ++ "}"
 
 -- | Objective function counting the number of trees
-numTrees :: ObjectiveFunction
-numTrees = OF numTreesOF Max
+numTrees :: ObjectiveFunction a
+numTrees = OF numTreesOF Min
   where
-    numTreesOF :: Problem -> ObjectiveFunc String Int
-    numTreesOF (Problem trees _ _) = linCombination [(1,t) | (s,ts) <- trees,t <- ts]
+    numTreesOF :: [(String,[(String,a)])] -> ObjectiveFunc String Int
+    numTreesOF tags = linCombination [(1,t) | (s,ts) <- tags,(t,_) <- ts]
 
 -- | Solves a problem using a given objective function
-solve :: Problem -> ObjectiveFunction -> IO Solution
-solve problem (OF fun direction) =
+solve :: Problem ->  IO Solution
+solve problem =
   do
-    let lp = execLPM $
-          do
-            setDirection direction
-            setObjective (fun problem)
-            formula problem
-    (code,solution) <- glpSolveVars simplexDefaults lp
-    return $ maybe (-1,[]) (\(val,vars) -> (val,[var | (var,vval) <- Map.toList vars,vval == 1])) solution
+    (code,solution) <- glpSolveVars mipDefaults problem -- simplexDefaults problem
+    return $ maybe (-1,[]) (\(val,vars) -> (val,[var | (var,vval) <- Map.toList vars,vval > 0])) solution
 
 -- | Given a grammar translate an example into a set of syntax trees
 examplesToForests :: Grammar -> Language -> [Example] -> [Forest]
