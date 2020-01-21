@@ -4,6 +4,8 @@ This project has a cabal and stack file. The easiest probably is to use stack.
 
 Run `stack ghci` to load all necessary files into a GHCi session.
 
+## Testing 
+
 There currently are two test functions `Subgrammar.GFRule.test` and `Subgrammar.GFSubtree`.
 
 The test functions require the [Exemplum grammar](https://github.com/MUSTE-Project/mulle-grammars) (both the
@@ -15,3 +17,15 @@ The tests load a grammar and use a set of example sentences to generate a new gr
 that the examples are really covered.
 
 
+## Profiling
+
+To profile the code you can build the code with profiling:
+
+```stack build --executable-profiling --ghc-options "-threaded"```
+
+Afterwards you can run it with profiling enabled:
+
+```stack exec --rts-options -p subgrammar-extraction```
+
+This results in a file called `subgrammar-extraction.prof` that can be
+analysed further.
