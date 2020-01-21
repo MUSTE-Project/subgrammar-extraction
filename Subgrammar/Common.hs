@@ -1,17 +1,13 @@
 module Subgrammar.Common where
 
 import PGF
--- import qualified GF.Grammar.Canonical
 import qualified GF
 import GF.Support
 import System.FilePath
 import System.Directory
 import Canonical
 import System.FilePath((</>),(<.>))
-import Filesystem (isDirectory)
-import Control.Monad.LPMonad
 import Data.LinearProgram
-import Data.LinearProgram.GLPK
 import qualified Data.Map.Lazy as Map
 
 import System.Clock
@@ -35,22 +31,25 @@ data ObjectiveFunction a = OF { fun :: [(String,[(String,a)])] -> ObjectiveFunc 
 type Problem = LP String Int -- Problem { trees :: [(String,[String])], rules :: [String] , formula :: LPM String Int ()}
 
 -- Constants -> Have to be updated
+path_to_exemplum :: String
 path_to_exemplum = "/tmp/Exemplum/"
+rgl_path :: String
 rgl_path = "/home/herb/src/foreign/gf/gf-rgl/src"
-subdirs = "abstract common prelude english"
+rgl_subdirs :: String
+rgl_subdirs = "abstract common prelude english"
 
 -- | Objective function counting the number of trees
 numTrees :: ObjectiveFunction a
 numTrees = OF numTreesOF Min
   where
     numTreesOF :: [(String,[(String,a)])] -> ObjectiveFunc String Int
-    numTreesOF tags = linCombination [(1,t) | (s,ts) <- tags,(t,_) <- ts]
+    numTreesOF tags = linCombination [(1,t) | (_,ts) <- tags,(t,_) <- ts]
 
 -- | Solves a problem using a given objective function
 solve :: Problem ->  IO Solution
 solve problem =
   do
-    (code,solution) <- glpSolveVars mipDefaults problem -- simplexDefaults problem
+    (_,solution) <- glpSolveVars mipDefaults problem
     return $ maybe (-1,[]) (\(val,vars) -> (val,[var | (var,vval) <- Map.toList vars,vval > 0])) solution
 
 -- | Given a grammar translate an example into a set of syntax trees
@@ -62,12 +61,12 @@ examplesToForests grammar language examples =
 generateGrammar :: Grammar -> Solution -> IO Grammar
 generateGrammar grammar solution =
   do
-    let lib_path = ".":rgl_path:[rgl_path</>subdir | subdir <- words subdirs] :: [FilePath]
+    let lib_path = ".":rgl_path:[rgl_path</>subdir | subdir <- words rgl_subdirs] :: [FilePath]
     putStrLn $ "###" ++ show lib_path
     -- read old concrete syntax
     let options = modifyFlags (\f -> f { optLibraryPath = lib_path
                                        })
-    (utc,(concname,gfgram)) <- GF.batchCompile options $ concs grammar
+    (_,(concname,gfgram)) <- GF.batchCompile options $ concs grammar
     let absname = GF.srcAbsName gfgram concname
         canon = GF.grammar2canonical noOptions absname gfgram
         -- filter the grammar

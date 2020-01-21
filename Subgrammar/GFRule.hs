@@ -2,10 +2,9 @@ module Subgrammar.GFRule where
 
 import Subgrammar.Common
 import Data.Maybe
-import Data.List
 import Control.Monad.LPMonad
 import Data.LinearProgram
-import System.FilePath((</>),(<.>))
+import System.FilePath((</>))
 
 import PGF
 
@@ -15,9 +14,10 @@ flatten tree = maybe [] (\(f,ts) -> (showCId f):(concatMap flatten ts)) $ unApp 
   
 -- Translate a list of forests into a constraint problem
 forestsToProblem :: [Forest] -> ObjectiveFunction [String] -> Problem
-forestsToProblem forests (OF fun direction) = 
+forestsToProblem forests (OF f dir) = 
   let
     -- helper to add consequtive numbers
+    numbered :: [a] -> [(Int,a)]
     numbered = zip [1..]
     -- Hierarchy of tags for sentences, trees and rules
     tags =   [(s_tag, [(t_tag,
@@ -29,16 +29,16 @@ forestsToProblem forests (OF fun direction) =
     -- List of all sentence variables
     sentences = map fst tags 
     -- List of all tree variables
-    trees = [t | (s,ts) <- tags, (t,_) <- ts]
+    trees = [t | (_,ts) <- tags, (t,_) <- ts]
     -- List of all rule names
-    rules = [r | (s,ts) <- tags, (t,ps) <- ts, (t,rs) <- ts, r <- rs]
+    rules = [r | (_,ts) <- tags, (_,rs) <- ts, r <- rs]
   in
     execLPM $ do
-      setDirection direction
-      setObjective (fun tags)
+      setDirection dir
+      setObjective (f tags)
       geqTo (linCombination [(1,s) | s <- sentences]) $ length sentences
       sequence_ [geqTo (linCombination ((-1,s):[(1,t) | (t,_) <- ts])) 0 | (s,ts) <- tags]
-      sequence_ [geqTo (linCombination ((-(length rs),t):[(1,r) | r <- rs])) 0 | (s,ts) <- tags,(t,rs) <- ts]
+      sequence_ [geqTo (linCombination ((-(length rs),t):[(1,r) | r <- rs])) 0 | (_,ts) <- tags,(t,rs) <- ts]
       sequence_ $
           [setVarKind s BinVar | s <- sentences] ++
           [setVarKind t BinVar | t <- trees] ++
@@ -69,11 +69,11 @@ test = do
   grammar' <- generateGrammar grammar solution
   putStrLn $ ">>> Loaded " ++ (show $ length $ functions $ pgf grammar') ++ " Rules"
   -- check result
-  let test = testExamples grammar' (fromJust $ readLanguage "ExemplumSubEng") examples
-  if (and $ map snd test)  then
+  let testResults = testExamples grammar' (fromJust $ readLanguage "ExemplumSubEng") examples
+  if (and $ map snd testResults) then
     putStrLn ">>> Success!!!"
   else
-    putStrLn $ ">>> Failed covering:\n" ++ (unlines $ map fst $ filter (not . snd) test)
+    putStrLn $ ">>> Failed covering:\n" ++ (unlines $ map fst $ filter (not . snd) testResults)
   where
     examples = [
       "few bad fathers become big",

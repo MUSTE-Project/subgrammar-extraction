@@ -20,9 +20,9 @@ type CanonicalGrammar = GF.Grammar.Canonical.Grammar
 
 -- | Write a grammar to file
 writeGrammar :: FilePath -> CanonicalGrammar -> IO ()
-writeGrammar prefix (Grammar abs cncs) =
+writeGrammar prefix (Grammar absGram cncs) =
   do createDirectoryIfMissing False prefix
-     writeUTF8File (absPath abs) (render80 abs)
+     writeUTF8File (absPath absGram) (render80 absGram)
      sequence_ [writeUTF8File (cncPath cnc) (render80 cnc) | cnc<-cncs]
   where
     absPath = gfpath . abstrName 
@@ -32,8 +32,8 @@ writeGrammar prefix (Grammar abs cncs) =
 
 -- | Rename a canonical grammar, i.e. both the abstract and the concrete syntax
 renameGrammar :: String -> CanonicalGrammar -> CanonicalGrammar
-renameGrammar newAbs (Grammar abs cncs) =
-    Grammar (renameAbs abs) (map renameCnc cncs)
+renameGrammar newAbs (Grammar absGram cncs) =
+    Grammar (renameAbs absGram) (map renameCnc cncs)
   where
     renameAbs (Abstract _ fls cs fs) = Abstract (ModId newAbs) fls cs fs
 
@@ -55,11 +55,11 @@ getConcNames (Grammar _ concs) =
 
 -- | Function to filter out rules that are not in a list of allowed ones
 filterGrammar :: [String] -> CanonicalGrammar -> CanonicalGrammar
-filterGrammar funs (Grammar abs concs) =
-  Grammar (filterAbstract funs abs)
-    $ map (filterConcrete funs) concs
+filterGrammar funNames (Grammar absGram concs) =
+  Grammar (filterAbstract absGram)
+    $ map filterConcrete concs
   where
-    filterAbstract funs (Abstract id flags cats absfuns) =
-      Abstract id flags cats [f | f <- absfuns, let (FunDef (FunId fname) _) = f, fname `elem` funs]
-    filterConcrete funs (Concrete id absid flags params lincat lindef) =
-      Concrete id absid flags params lincat [f | f <- lindef, let (LinDef (FunId fname) _ _) = f, fname `elem` funs]
+    filterAbstract (Abstract absId flags cats absfuns) =
+      Abstract absId flags cats [f | f <- absfuns, let (FunDef (FunId fname) _) = f, fname `elem` funNames]
+    filterConcrete  (Concrete concId absid flags params lincat lindef) =
+      Concrete concId absid flags params lincat [f | f <- lindef, let (LinDef (FunId fname) _ _) = f, fname `elem` funNames]

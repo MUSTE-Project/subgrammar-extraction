@@ -8,11 +8,9 @@ import Subgrammar.Common
 
 import Control.Monad.LPMonad
 import Data.LinearProgram
-import System.FilePath((</>),(<.>))
+import System.FilePath((</>))
 
 -- import Control.Monad (guard)
-
-import Debug.Trace
 
 {-
       f
@@ -33,6 +31,7 @@ import Debug.Trace
 ([],[f],[(g i),h])
 -}
 
+testTree :: Tree
 testTree =
   mkApp (mkCId "f") [mkApp (mkCId "g") [mkApp (mkCId "i") []],mkApp (mkCId "h") []]
 
@@ -57,13 +56,13 @@ join delim l = concat (intersperse delim l)
 -- | Splits a list at a delimiter element
 split :: Eq a => [a] -> [a] -> [[a]]
 split delim l =
-  split' delim l []
+  split' l []
   where
-    split' _ [] [] = []
-    split' _ [] acc = [reverse acc]
-    split' delim l acc
-      | isPrefixOf delim l = (reverse acc):(split' delim (drop (length delim) l) [])
-      | otherwise = split' delim (tail l) (head l:acc)
+    split' [] [] = []
+    split' [] acc = [reverse acc]
+    split' l'@(hd:tl) acc
+      | isPrefixOf delim l' = (reverse acc):(split' (drop (length delim) l') [])
+      | otherwise = split' tl (hd:acc)
 
 -- | Simple tree type
 data SimpleTree = Empty | Node String [SimpleTree]
@@ -154,10 +153,10 @@ allSubtrees tree =
     map (map simpleBfs) $ map (subtrees' tree) combinations
   where
     subtrees' :: SimpleTree -> [Path] -> [SimpleTree]
-    subtrees' tree [] = [tree]
-    subtrees' tree (p:ps) =
+    subtrees' tree' [] = [tree']
+    subtrees' tree' (p:ps) =
       let
-        (branch,newTree) = deleteBranch tree p
+        (branch,newTree) = deleteBranch tree' p
       in
         branch:subtrees' newTree ps
 
@@ -169,29 +168,32 @@ sizedSubtrees tree size =
     -- get all subsets and sort by longest path first
     combinations = map (sortBy (\a b -> compare (length b) (length a))) $ subsequences pathes
   in
-    map (map simpleBfs) $ catMaybes $ map (subtrees' tree size)  combinations
+    map (map simpleBfs) $ catMaybes $ map (subtrees' tree)  combinations
   where
-    subtrees' :: SimpleTree -> Int -> [Path] -> Maybe [SimpleTree]
-    subtrees' tree size []
-      | simpleSize tree <= size = Just [tree]
+    subtrees' :: SimpleTree -> [Path] -> Maybe [SimpleTree]
+    subtrees' tree' []
+      | simpleSize tree' <= size = Just [tree']
       | otherwise = Nothing
-    subtrees' tree msize (p:ps) =
+    subtrees' tree' (p:ps) =
       let
-        (branch,newTree) = deleteBranch tree p
+        (branch,newTree) = deleteBranch tree' p
       in
-        if simpleSize branch <= size then fmap (branch:) (subtrees' newTree size ps) else Nothing
+        if simpleSize branch <= size then fmap (branch:) (subtrees' newTree ps) else Nothing
 
 -- | Size of a SimpleTree
 simpleSize :: SimpleTree -> Int
-simpleSize = length . simpleBfs
+simpleSize t =
+  let l = simpleBfs t
+  in
+    length l Prelude.- (length $ filter (=="@") l)
 
 -- | Filters all possible subtrees by maximum size
 maxSizeSubtrees :: SimpleTree -> Int -> [Subtrees]
 maxSizeSubtrees tree size =
   let
-    all = allSubtrees tree
+    allTrees = allSubtrees tree
   in
-    [split | split <- all, maximum (map length split) <= size]
+    [splitted | splitted <- allTrees, maximum (map length splitted) <= size]
     
 
 {-
@@ -247,9 +249,10 @@ getPrunedTrees (PruneOpts depthLimit sizeLimit) tree
   
 -- | Translate a list of forests into a constraint problem given a maximum subtree size
 forestsToProblem :: [Forest] -> Int -> ObjectiveFunction [(String, [String])] -> Problem
-forestsToProblem forests size (OF fun direction) =
+forestsToProblem forests size (OF f dir) =
   let
     -- helper to add consequtive numbers
+    numbered :: [a] -> [(Int,a)]
     numbered = zip [1..]
     -- Hierarchy of tags for sentences, trees and rules
     tags =   [(s_tag, [(t_tag,
@@ -261,19 +264,19 @@ forestsToProblem forests size (OF fun direction) =
       -- List of all sentence variables
     sentences = map fst tags 
     -- List of all tree variables
-    trees = [t | (s,ts) <- tags, (t,_) <- ts]
+    trees = [t | (_,ts) <- tags, (t,_) <- ts]
     -- List of all partition variables
-    partitions = [p | (s,ts) <- tags, (t,ps) <- ts, (p,_) <- ps]
+    partitions = [p | (_,ts) <- tags, (_,ps) <- ts, (p,_) <- ps]
     -- List of all rule names
-    rules = [r | (s,ts) <- tags, (t,ps) <- ts, (p,rs) <- ps, r <- rs]
+    rules = [r | (_,ts) <- tags, (_,ps) <- ts, (_,rs) <- ps, r <- rs]
   in
     execLPM $ do
-      setDirection direction
-      setObjective (fun tags)
+      setDirection dir
+      setObjective (f tags)
       geqTo (linCombination [(1,s) | s <- sentences]) $ length sentences
       sequence_ [geqTo (linCombination ((-1,s):[(1,t) | (t,_) <- ts])) 0 | (s,ts) <- tags]
-      sequence_ [geqTo (linCombination ((-1,t):[(1,p) | (p,_) <- ps])) 0 | (s,ts) <- tags,(t,ps) <- ts]
-      sequence_ [geqTo (linCombination ((-(length rs),p):[(1,r) | r <- rs])) 0 | (s,ts) <- tags,(t,ps) <- ts,(p,rs) <- ps]
+      sequence_ [geqTo (linCombination ((-1,t):[(1,p) | (p,_) <- ps])) 0 | (_,ts) <- tags,(t,ps) <- ts]
+      sequence_ [geqTo (linCombination ((-(length rs),p):[(1,r) | r <- rs])) 0 | (_,ts) <- tags,(_,ps) <- ts,(p,rs) <- ps]
       sequence_ $
         [setVarKind s BinVar | s <- sentences] ++
         [setVarKind t BinVar | t <- trees]  ++
@@ -308,11 +311,11 @@ test = do
   grammar' <- generateGrammar grammar splitted
   putStrLn $ ">>> Loaded " ++ (show $ length $ functions $ pgf grammar') ++ " Rules"
   -- check result
-  let test = testExamples grammar' (fromJust $ readLanguage "ExemplumSubEng") examples
-  if (and $ map snd test)  then
+  let testResults = testExamples grammar' (fromJust $ readLanguage "ExemplumSubEng") examples
+  if (and $ map snd testResults)  then
     putStrLn ">>> Success!!!"
   else
-    putStrLn $ ">>> Failed covering:\n" ++ (unlines $ map fst $ filter (not . snd) test)
+    putStrLn $ ">>> Failed covering:\n" ++ (unlines $ map fst $ filter (not . snd) testResults)
   where
     examples = [
       "few bad fathers become big",
