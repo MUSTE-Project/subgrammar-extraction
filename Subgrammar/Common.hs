@@ -62,7 +62,6 @@ generateGrammar :: Grammar -> Solution -> IO Grammar
 generateGrammar grammar solution =
   do
     let lib_path = ".":rgl_path:[rgl_path</>subdir | subdir <- words rgl_subdirs] :: [FilePath]
-    putStrLn $ "###" ++ show lib_path
     -- read old concrete syntax
     let options = modifyFlags (\f -> f { optLibraryPath = lib_path
                                        })
