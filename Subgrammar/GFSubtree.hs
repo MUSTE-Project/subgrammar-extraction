@@ -81,7 +81,7 @@ treeToSimpleTree t =
 
 -- | Gets the root of a simple tree
 getSimpleRoot :: SimpleTree -> String
-getSimpleRoot Empty = ""
+getSimpleRoot Empty = "@"
 getSimpleRoot (Node n _) = n
 
 -- | Gets the subtrees of a simple tree
