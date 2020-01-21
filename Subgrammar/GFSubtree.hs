@@ -286,6 +286,8 @@ forestsToProblem forests size (OF f dir) =
 -- | Test function
 test :: IO ()
 test = do
+  -- Set maximum subtree size
+  let maxSize = 3
   -- load grammar
   putStrLn ">>> Load grammar"
   p <- readPGF $ path_to_exemplum</>"Exemplum.pgf"
@@ -294,9 +296,11 @@ test = do
   -- convert examples
   putStrLn ">>> Convert examples to forests"
   let forests = examplesToForests grammar (fromJust $ readLanguage "ExemplumEng") examples
+-- putStrLn $ ">>> Forrest:\n" ++ (unlines $ map show $ map (map (\t -> (simpleSize $ treeToSimpleTree t,t))) forests)
+  putStrLn $ ">>> Tree sizes:" ++ (show $ map (map (\t -> let st = treeToSimpleTree t in (simpleSize st, length $ sizedSubtrees st maxSize))) forests)
   -- create csp
   putStrLn ">>> Convert forests to CSP"
-  let problem = forestsToProblem forests 2 numTrees
+  let problem = forestsToProblem forests maxSize numTrees
   putStrLn $ ">>> Got problem:\n" ++ show problem
   writeLP "/tmp/problem.lp" problem
   -- solve problem
