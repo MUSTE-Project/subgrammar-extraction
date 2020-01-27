@@ -193,7 +193,7 @@ maxSizeSubtrees tree size =
   let
     allTrees = allSubtrees tree
   in
-    [splitted | splitted <- allTrees, maximum (map length splitted) <= size]
+    [splitted | splitted <- allTrees, maximum (map (length . filter (/="@")) splitted) <= size]
     
 
 {-
