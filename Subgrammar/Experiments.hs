@@ -42,7 +42,7 @@ recreateGrammar g_r lang_r g_0 lang_0 exampleCount treeDepth maxSubtreeSize = do
   let permutedSentences = permutations sentences
   putStrLn ">>> Start process"
   -- sequence
-  withPool 4 $ \p -> parallel p [(\(r,prec,re) -> (es,[],prec,re)) <$> recreateFromExamples g_r lang_r g_0 es maxSubtreeSize | p <- permutedSentences, l <- [1..length p-1], let es = (take l p)]
+  withPool 4 $ \p -> parallel p [(\(r,prec,re) -> (es,r,prec,re)) <$> recreateFromExamples g_r lang_r g_0 es maxSubtreeSize | p <- permutedSentences, l <- [1..length p-1], let es = (take l p)]
   --return [(concat permutedSentences,[],0,0)]
 
 recreateExemplum :: Int -> Int -> Int -> IO [([String],[String],Double,Double)]
