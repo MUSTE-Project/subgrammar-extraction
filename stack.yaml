@@ -44,25 +44,28 @@ packages:
 # (e.g., acme-missiles-0.3)
 extra-deps:
 - git: https://github.com/GrammaticalFramework/gf-core
-  commit: master
+  commit: 65024a0a553d2e403228f1516f7b05ba8d944e0f
 #  subdirs:
   # The repo defines several packages.  We only need the haskell
   # runtime, which will hopefully be published on Hackage soon.
   # See discussion here:
   # https://github.com/GrammaticalFramework/gf-core/issues/32 
 #  - /src/runtime/haskell       # pgf.cabal
-- glpk-hs-0.7@sha256:d31d2ce80f301ab24946d486e13a85d5dcfb8b065a14bfbda7ea5a7fa41cf560
-- gasp-1.2.0.0@sha256:588f9d470ed8e51ff3819b496d5a5a2f41c55b613fee7f5c59da6271e73ef7d3
-- exceptions-0.10.3@sha256:6e8e66f3acf2ea59f9e100c55a885591c1981789ac2222022ff523c30990efb8
-- random-1.1@sha256:7b67624fd76ddf97c206de0801dc7e888097e9d572974be9b9ea6551d76965df
-- utf8-string-1.0.1.1@sha256:68cc6cf665e7212334a51b63d6936daeaca023b2cfe8637d130acfe95f91700b
-- transformers-compat-0.6.5@sha256:50b00c57bf3fc379ec2477bfc261a2aebc983084488478adb29854f193af4696
-- json-0.9.3@sha256:4557a1db3cb2ff80c4df9e30181ad324b97fe569a27b13a444cc056db0e31547
-- parallel-3.2.2.0@sha256:924dc6f8ac94d535689070b96864da0913aee99d8e3354f9130e4d96d5b17328
-- syb-0.7.1@sha256:8d37b1e4d04a9aa8512dc6c2a06e02afc015a2fd3e735bdfeeacb5e2e853323c
-- system-fileio-0.3.16.4
-- system-filepath-0.4.14
-- clock-0.8
+- alex-3.2.5@sha256:af0c4aac67849d8b35e8c16063517642a5c6b809d09fdb040ed9369f91cb26fb,4054
+- benchpress-0.2.2.12@sha256:a425c5ef396f203e17c322d29ead8bfac60954e50dc7ec77ed50ba1286213d50,1194
+- clock-0.8@sha256:b4ae207e2d3761450060a0d0feb873269233898039c76fceef9cc1a544067767,4113
+- exceptions-0.10.4@sha256:d3aaa8d112cd53e16b5991bf5e43237ad6cf8277b8bab5cb8ab8e081dbb556f7,2684
+- glpk-hs-0.7@sha256:d31d2ce80f301ab24946d486e13a85d5dcfb8b065a14bfbda7ea5a7fa41cf560,2616
+- happy-1.19.12@sha256:acc67bfbf3af87892766781dd064c9447181ea81269a7a1e5fc9ace4a8fa4768,5691
+- json-0.10@sha256:b56b1f5f1e17d11e6bcf754ea7f0243a87e224a17608dcd20f331a1909be2e25,3188
+- parallel-3.2.2.0@sha256:924dc6f8ac94d535689070b96864da0913aee99d8e3354f9130e4d96d5b17328,1792
+- random-1.1@sha256:7b67624fd76ddf97c206de0801dc7e888097e9d572974be9b9ea6551d76965df,1777
+- system-fileio-0.3.16.4@sha256:ca3a89469943828bcd526bed2d6943541e3e672464fd58abab3443b63f59c5ba,2127
+- utf8-string-1.0.1.1@sha256:68cc6cf665e7212334a51b63d6936daeaca023b2cfe8637d130acfe95f91700b,1151
+- gasp-1.2.0.0@sha256:588f9d470ed8e51ff3819b496d5a5a2f41c55b613fee7f5c59da6271e73ef7d3,697
+- syb-0.7.1@sha256:8d37b1e4d04a9aa8512dc6c2a06e02afc015a2fd3e735bdfeeacb5e2e853323c,2462
+- system-filepath-0.4.14@sha256:e8ce7d24d7008a825e5d03aa672950a0e8178ac54c3de7134f36c3a7e37694a2,1631
+
 # Override default flag values for local packages and extra-deps
 flags:
   gf:
