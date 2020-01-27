@@ -51,7 +51,7 @@ recreateExemplum exampleCount treeDepth maxSubtreeSize =
     putStrLn ">>> Load RGL"
     pgf_r <- readPGF "pgfs/LangEng.pgf"
     putStrLn ">>> Load Exemplum"
-    pgf_0 <- readPGF $ path_to_exemplum</>"Exemplum.pgf"
+    pgf_0 <- readPGF $ "pgfs/ExemplumEng.pgf"
     recreateGrammar (Grammar pgf_r []) (fromJust $ readLanguage "LangEng") (Grammar pgf_0 []) (fromJust $ readLanguage "ExemplumEng") exampleCount treeDepth maxSubtreeSize
     
 
