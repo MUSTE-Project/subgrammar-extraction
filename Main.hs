@@ -1,10 +1,9 @@
 module Main where
 
 import Subgrammar.GFSubtree
-import Subgrammar.Common
+import Test.BenchPress
 
 main :: IO ()
 main = -- putStrLn "Hello, Haskell!"
   do
-    _ <- time Subgrammar.GFSubtree.test
-    return ()
+    bench 10 Subgrammar.GFSubtree.treeTest
