@@ -461,3 +461,23 @@ Compiled (heap size 8GB)
 7 (1,3,5,7,8,9,10)    | 27s | 48s
 8 (1,3,5,6,7,8,9,10)  | 38s | 99s
 -}
+
+{-
+toSubtree :: Int -> SimpleTree -> [Subtrees]
+toSubtree 0 _ = []
+toSubtree _ Empty = []
+toSubtree depth (Node root children) =
+  combineToTree root (candidates (depth - 1) children ) ++
+  combineToList root (concatMap (toSubtree depth) children)
+  where
+    candidates :: Int -> [SimpleTree] -> [Subtrees]
+    candidates 0 _ = []
+    candidates _ [] = []
+    candidates _ _ = [] -- depth trees = _
+
+    combineToTree :: String -> [Subtrees] -> [Subtrees]
+    combineToTree root' _ = [[[root']]] -- undefined
+    combineToList :: String -> [Subtrees] -> [Subtrees]
+    combineToList node sts = [[node]:st | st <- ([]:sts)]
+
+-}
