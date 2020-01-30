@@ -29,7 +29,7 @@ library
 executable subgrammar-extraction
   main-is:             Main.hs
   other-modules:       Subgrammar.GFSubtree
-                     , Canonical, Subgrammar.Common, Experiments
+                     , Canonical, Subgrammar.Common, Subgrammar.Experiments
   -- other-extensions:
   build-depends:       base >=4.10 , gf >= 3.10, glpk-hs >= 0.6, containers
                      , filepath, directory, system-fileio, clock
