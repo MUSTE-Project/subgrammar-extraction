@@ -7,7 +7,7 @@ import Data.Maybe
 import Subgrammar.Common
 
 import Control.Monad.LPMonad
-import Data.LinearProgram
+import Data.LinearProgram hiding ((-))
 import System.FilePath((</>))
 
 -- import Control.Monad (guard)
@@ -185,7 +185,7 @@ simpleSize :: SimpleTree -> Int
 simpleSize t =
   let l = simpleBfs t
   in
-    length l Prelude.- (length $ filter (=="@") l)
+    length l - (length $ filter (=="@") l)
 
 -- | Filters all possible subtrees by maximum size
 maxSizeSubtrees :: SimpleTree -> Int -> [Subtrees]
@@ -300,7 +300,7 @@ test = do
         putStrLn $ ">>> Loaded " ++ (show $ length $ functions p) ++ " Rules"
         -- convert examples
         putStrLn ">>> Convert examples to forests"
-        let forests = examplesToForests grammar (fromJust $ readLanguage "ExemplumEng") (map (examples !!) exampleNos)
+        let forests = examplesToForests grammar (fromJust $ readLanguage "ExemplumEng") (map (exampleSentences !!) exampleNos)
         -- putStrLn $ ">>> Forrest:\n" ++ (unlines $ map show $ map (map (\t -> (simpleSize $ treeToSimpleTree t,t))) forests)
         --  putStrLn $ ">>> Tree sizes:" ++ (show $ map (map (\t -> let st = treeToSimpleTree t in (simpleSize st, length $ sizedSubtrees st maxSize))) forests)
         -- create csp
@@ -320,7 +320,7 @@ test = do
         grammar' <- generateGrammar grammar splitted
         putStrLn $ ">>> Loaded " ++ (show $ length $ functions $ pgf grammar') ++ " Rules"
         -- check result
-        let testResults = testExamples grammar' (fromJust $ readLanguage "ExemplumSubEng") (map (examples !!) exampleNos)
+        let testResults = testExamples grammar' (fromJust $ readLanguage "ExemplumSubEng") (map (exampleSentences !!) exampleNos)
         if (and $ map snd testResults)  then
           putStrLn ">>> Success!!!"
         else
@@ -349,8 +349,8 @@ treeTest = do
     do 
       putStrLn $ ">>> Failed covering: " ++ (unwords missing)
   
-examples :: [String]
-examples = [
+exampleSentences :: [String]
+exampleSentences = [
   "few bad fathers become big",                                       -- 1
   "now John and Paris aren't good now",                               -- 2
   "many cold books come today",                                       -- 3

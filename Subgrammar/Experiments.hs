@@ -3,7 +3,7 @@ module Subgrammar.Experiments where
 import System.Random (getStdGen)
 import Data.List
 import Data.Maybe
-import System.FilePath((</>))
+-- import System.FilePath((</>))
 -- import Control.Concurrent.ParallelIO
 import Control.Concurrent.ParallelIO.Local
 
@@ -31,8 +31,8 @@ recreateFromExamples g_r lang_r g_0 examples maxSubtreeSize =
     return (splitted, precision,recall)
 
 -- | Return the examples used, the rules created, precision and recall
-recreateGrammar :: Grammar -> Language -> Grammar -> Language -> Int -> Int -> Int -> IO [([String],[String],Double,Double)]
-recreateGrammar g_r lang_r g_0 lang_0 exampleCount treeDepth maxSubtreeSize = do
+recreateGrammar :: Grammar -> Language -> Grammar -> Int -> Int -> Int -> IO [([String],[String],Double,Double)]
+recreateGrammar g_r lang_r g_0 exampleCount treeDepth maxSubtreeSize = do
   gen <- getStdGen
   putStrLn ">>> Generate trees"
   let trees = take exampleCount $ generateRandomDepth gen (pgf g_0) (startCat $ pgf g_0) (Just treeDepth)
@@ -42,7 +42,7 @@ recreateGrammar g_r lang_r g_0 lang_0 exampleCount treeDepth maxSubtreeSize = do
   let permutedSentences = permutations sentences
   putStrLn ">>> Start process"
   -- sequence
-  withPool 4 $ \p -> parallel p [(\(r,prec,re) -> (es,r,prec,re)) <$> recreateFromExamples g_r lang_r g_0 es maxSubtreeSize | p <- permutedSentences, l <- [1..length p-1], let es = (take l p)]
+  withPool 4 $ \p -> parallel p [(\(r,prec,re) -> (es,r,prec,re)) <$> recreateFromExamples g_r lang_r g_0 es maxSubtreeSize | ps <- permutedSentences, l <- [1..length ps-1], let es = (take l ps)]
   --return [(concat permutedSentences,[],0,0)]
 
 recreateExemplum :: Int -> Int -> Int -> IO [([String],[String],Double,Double)]
@@ -52,7 +52,7 @@ recreateExemplum exampleCount treeDepth maxSubtreeSize =
     pgf_r <- readPGF "pgfs/LangEng.pgf"
     putStrLn ">>> Load Exemplum"
     pgf_0 <- readPGF $ "pgfs/ExemplumEng.pgf"
-    recreateGrammar (Grammar pgf_r []) (fromJust $ readLanguage "LangEng") (Grammar pgf_0 []) (fromJust $ readLanguage "ExemplumEng") exampleCount treeDepth maxSubtreeSize
+    recreateGrammar (Grammar pgf_r []) (fromJust $ readLanguage "LangEng") (Grammar pgf_0 []) exampleCount treeDepth maxSubtreeSize
     
 
 compareTreebank :: Grammar -> [(String,[(Language,Tree)])] -> ([(String,Tree)],Double,Double)
