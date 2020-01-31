@@ -8,4 +8,4 @@ main :: IO ()
 main = -- putStrLn "Hello, Haskell!"
   do
 --    bench 10 Subgrammar.GFSubtree.treeTest
-    bench 1 $ writeFile "out663.txt" =<< show <$> Subgrammar.Experiments.recreateExemplum 6 6 3
+    bench 10 $ writeFile "out663.txt" =<< show <$> Subgrammar.Experiments.recreateExemplum 5 5 3 5

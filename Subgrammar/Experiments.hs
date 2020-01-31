@@ -1,12 +1,12 @@
 module Subgrammar.Experiments where
 
-import System.Random (getStdGen)
+import System.Random (mkStdGen)
 import Data.List
 import Data.Maybe
 -- import System.FilePath((</>))
 -- import Control.Concurrent.ParallelIO
 import Control.Concurrent.ParallelIO.Local
-
+import System.Random.Shuffle
 import PGF
 import Subgrammar.Common
 import Subgrammar.GFSubtree
@@ -31,19 +31,19 @@ recreateFromExamples g_r lang_r g_0 examples maxSubtreeSize =
     return (splitted, precision,recall)
 
 -- | Return the examples used, the rules created, precision and recall
-recreateGrammar :: Grammar -> Language -> Grammar -> Int -> Int -> Int -> IO [([String],[String],Double,Double)]
-recreateGrammar g_r lang_r g_0 exampleCount treeDepth maxSubtreeSize = do
-  gen <- getStdGen
+recreateGrammar :: Grammar -> Language -> Grammar -> Int -> Int -> Int -> Int -> IO [([String],[String],Double,Double)]
+recreateGrammar g_r lang_r g_0 exampleCount treeDepth maxSubtreeSize runs = do
+  let gen = mkStdGen 4 -- chosen by a fair dice role
   putStrLn ">>> Generate trees"
   let trees = take exampleCount $ generateRandomDepth gen (pgf g_0) (startCat $ pgf g_0) (Just treeDepth)
   putStrLn ">>> Linearize trees"
   let sentences = [linearize (pgf g_r) lang_r t | t <- trees]
-  putStrLn ">>> Permute sentences"
-  let permutedSentences = permutations sentences
+  putStrLn ">>> Randomize sentences"
+  let shuffledSentences = map (\l -> shuffle' l (length l) gen) $ replicate runs sentences 
   putStrLn ">>> Start process"
   -- sequence
-  withPool 4 $ \p -> parallel p [(\(r,prec,re) -> (es,r,prec,re)) <$> recreateFromExamples g_r lang_r g_0 es maxSubtreeSize | ps <- permutedSentences, l <- [1..length ps-1], let es = (take l ps)]
-  --return [(concat permutedSentences,[],0,0)]
+  withPool 4 $ \p -> parallel p [(\(r,prec,re) -> (es,r,prec,re)) <$> recreateFromExamples g_r lang_r g_0 es maxSubtreeSize | shuffled <- shuffledSentences,
+                                 l <- [1..length shuffled-1], let es = (take l shuffled)]
 
 recreateExemplum :: Int -> Int -> Int -> IO [([String],[String],Double,Double)]
 recreateExemplum exampleCount treeDepth maxSubtreeSize =
