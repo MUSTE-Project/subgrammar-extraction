@@ -7,10 +7,10 @@ import Data.Maybe
 import Subgrammar.Common
 
 import Control.Monad.LPMonad
-import Data.LinearProgram hiding ((-))
+import Data.LinearProgram hiding ((-),(+))
 import System.FilePath((</>))
 
--- import Control.Monad (guard)
+import Control.Monad (guard)
 
 {-
       f
@@ -65,7 +65,7 @@ split delim l =
       | otherwise = split' tl (hd:acc)
 
 -- | Simple tree type
-data SimpleTree = Empty | Node String [SimpleTree]
+data SimpleTree = Empty | Node String [SimpleTree] deriving Eq
 
 instance Show SimpleTree where
   show Empty = "()"
@@ -486,14 +486,14 @@ chopTreeIntoBitsAndPieces sizeLimit = chopTree
          return (subtrees ++ subtrees')
 
     getPrunedTrees :: SimpleTree -> [(SimpleTree, [SimpleTree])]
-    getPrunedTrees tree = [ (tree, branches) | (tree, branches, _) <- pruneTs tree [] 0 ]
+    getPrunedTrees tree = [ (tree', branches) | (tree', branches, _) <- pruneTs tree [] 0 ]
 
     pruneTs :: SimpleTree -> [SimpleTree] -> Int -> [(SimpleTree, [SimpleTree], Int)]
-    pruneTs tree@(Node fun children) branches size 
+    pruneTs tree@(Node root children) branches size 
       = (Empty, tree:branches, size) :
         do guard $ size `less` sizeLimit
            (children', branches', size') <- pruneCs children branches (size+1) 
-           return (Node fun children', branches', size')
+           return (Node root children', branches', size')
     pruneTs tree branches size 
       = [(tree, branches, size)]
 
