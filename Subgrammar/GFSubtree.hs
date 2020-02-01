@@ -462,22 +462,47 @@ Compiled (heap size 8GB)
 8 (1,3,5,6,7,8,9,10)  | 38s | 99s
 -}
 
-{-
-toSubtree :: Int -> SimpleTree -> [Subtrees]
-toSubtree 0 _ = []
-toSubtree _ Empty = []
-toSubtree depth (Node root children) =
-  combineToTree root (candidates (depth - 1) children ) ++
-  combineToList root (concatMap (toSubtree depth) children)
-  where
-    candidates :: Int -> [SimpleTree] -> [Subtrees]
-    candidates 0 _ = []
-    candidates _ [] = []
-    candidates _ _ = [] -- depth trees = _
+-- | Computes all subtrees (optionally up to a give size), optimized version
+sizedSubtreesByChopping :: Maybe Int -> SimpleTree -> [Subtrees]
+sizedSubtreesByChopping sizeLimit tree 
+  = map (map simpleBfs) $ chopTreeIntoBitsAndPieces sizeLimit tree
 
-    combineToTree :: String -> [Subtrees] -> [Subtrees]
-    combineToTree root' _ = [[[root']]] -- undefined
-    combineToList :: String -> [Subtrees] -> [Subtrees]
-    combineToList node sts = [[node]:st | st <- ([]:sts)]
 
--}
+chopTreeIntoBitsAndPieces :: Maybe Int -> SimpleTree -> [[SimpleTree]]
+chopTreeIntoBitsAndPieces sizeLimit = chopTree
+  where 
+    chopTree :: SimpleTree -> [[SimpleTree]]
+    chopTree tree = 
+      do (subtree, children) <- getPrunedTrees tree
+         guard (subtree /= Empty)
+         subtrees <- chopChildren children
+         return (subtree : subtrees)
+
+    chopChildren :: [SimpleTree] -> [[SimpleTree]]
+    chopChildren [] = return []
+    chopChildren (tree : trees) = 
+      do subtrees <- chopTree tree
+         subtrees' <- chopChildren trees
+         return (subtrees ++ subtrees')
+
+    getPrunedTrees :: SimpleTree -> [(SimpleTree, [SimpleTree])]
+    getPrunedTrees tree = [ (tree, branches) | (tree, branches, _) <- pruneTs tree [] 0 ]
+
+    pruneTs :: SimpleTree -> [SimpleTree] -> Int -> [(SimpleTree, [SimpleTree], Int)]
+    pruneTs tree@(Node fun children) branches size 
+      = (Empty, tree:branches, size) :
+        do guard $ size `less` sizeLimit
+           (children', branches', size') <- pruneCs children branches (size+1) 
+           return (Node fun children', branches', size')
+    pruneTs tree branches size 
+      = [(tree, branches, size)]
+
+    pruneCs :: [SimpleTree] -> [SimpleTree] -> Int -> [([SimpleTree], [SimpleTree], Int)]
+    pruneCs [] branches size = return ([], branches, size)
+    pruneCs (tree:trees) branches size 
+      = do (tree', branches', size') <- pruneTs tree branches size 
+           (trees', branches'', size'') <- pruneCs trees branches' size' 
+           return (tree':trees', branches'', size'')
+
+    value `less` Just limit = value < limit
+    _     `less` Nothing    = True
