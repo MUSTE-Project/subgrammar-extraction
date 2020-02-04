@@ -256,7 +256,9 @@ forestsToProblem forests size (OF f dir) =
     numbered = zip [1..]
     -- Hierarchy of tags for sentences, trees and rules
     tags =   [(s_tag, [(t_tag,
-                        [(p_tag,map (join "#") rs) | (pn,rs) <- numbered (maxSizeSubtrees (treeToSimpleTree t) size), let p_tag = t_tag ++ "p" ++ show pn]
+--                        [(p_tag,map (join "#") rs) | (pn,rs) <- numbered (maxSizeSubtrees (treeToSimpleTree t) size), let p_tag = t_tag ++ "p" ++ show pn]
+--                        [(p_tag,map (join "#") rs) | (pn,rs) <- numbered (sizedSubtrees (treeToSimpleTree t) size), let p_tag = t_tag ++ "p" ++ show pn]
+                        [(p_tag,map (join "#") rs) | (pn,rs) <- numbered (sizedSubtreesByChopping (Just size) (treeToSimpleTree t)), let p_tag = t_tag ++ "p" ++ show pn]
                        )
                       | (tn,t) <- numbered ts,let t_tag = s_tag ++ "t" ++ show tn]
               )
@@ -511,3 +513,4 @@ chopTreeIntoBitsAndPieces sizeLimit = chopTree
 
     value `less` Just limit = value < limit
     _     `less` Nothing    = True
+
