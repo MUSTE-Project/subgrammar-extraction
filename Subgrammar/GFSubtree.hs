@@ -332,9 +332,10 @@ test = do
 treeTest :: IO ()
 treeTest = do
   let maxSize = 3
+  let treeNumber = 8 -- max 16
   -- create csp
   putStrLn ">>> Convert forests to CSP"
-  let problem = forestsToProblem (map (map (fromJust . readExpr)) exampleTrees) maxSize numTrees
+  let problem = forestsToProblem (map (map (fromJust . readExpr)) (take treeNumber exampleTrees)) maxSize numTrees
   -- solve problem
   putStrLn ">>> Solve the CSP"
   solution <- solve problem
@@ -382,37 +383,41 @@ exampleTrees =
     [ "UttS (UseCl (TTAnt TPres ASimul) PPos (PredVP (DetCN many_Det (AdjCN (PositA cold_A) (UseN book_N))) (AdvVP (UseV come_V) today_Adv)))" ],
     [ "UttS (UseCl (TTAnt TPres ASimul) PPos (PredVP (UsePron it_Pron) (UseComp (CompAP (PositA blue_A)))))" ],
     [ "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePron they_Pron) (ComplSlash (SlashV2a love_V2) (DetCN every_Det (UseN2 mother_N2)))))" ],
+    -- 5 trees
     [ "UttS (AdvS now_Adv (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePron it_Pron) (AdvVP (ComplVA become_VA (PositA blue_A)) (PrepNP in_Prep (UsePN john_PN))))))" ],
     [ "UttS (UseCl (TTAnt TPres ASimul) PPos (PredVP (UsePN john_PN) (ComplVA become_VA (PositA cold_A))))" ],
     [ "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePron it_Pron) (UseV come_V)))" ],
     [
       "UttS (AdvS (PrepNP on_Prep (UsePN paris_PN)) (AdvS now_Adv (UseCl (TTAnt TPres ASimul) PPos (PredVP (UsePN paris_PN) (UseV come_V)))))",
       "UttS (AdvS (PrepNP on_Prep (AdvNP (UsePN paris_PN) now_Adv)) (UseCl (TTAnt TPres ASimul) PPos (PredVP (UsePN paris_PN) (UseV come_V))))"
+    ],
+    [
+      "UttS (AdvS today_Adv (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePron she_Pron) (AdvVP (AdvVP (ComplSlash (SlashV2a read_V2) (UsePN paris_PN)) now_Adv) now_Adv))))",
+      "UttS (AdvS today_Adv (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePron she_Pron) (AdvVP (ComplSlash (SlashV2a read_V2) (AdvNP (UsePN paris_PN) now_Adv)) now_Adv))))",
+      "UttS (AdvS today_Adv (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePron she_Pron) (ComplSlash (SlashV2a read_V2) (AdvNP (AdvNP (UsePN paris_PN) now_Adv) now_Adv)))))"
+    ],
+    -- 10 trees
+    [
+      "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (DetCN every_Det (UseN computer_N)) (AdvVP (ComplSlash (SlashV2a break_V2) (DetCN many_Det (UseN2 mother_N2))) now_Adv)))",
+      "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (DetCN every_Det (UseN computer_N)) (ComplSlash (SlashV2a break_V2) (AdvNP (DetCN many_Det (UseN2 mother_N2)) now_Adv))))"
+    ],
+    [
+      "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePN paris_PN) (AdvVP (AdvVP (AdvVP (ComplSlash (SlashV2a switch8on_V2) (UsePron it_Pron)) now_Adv) today_Adv) now_Adv)))",
+      "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePN paris_PN) (AdvVP (AdvVP (ComplSlash (SlashV2a switch8on_V2) (AdvNP (UsePron it_Pron) now_Adv)) today_Adv) now_Adv)))",
+      "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePN paris_PN) (AdvVP (ComplSlash (SlashV2a switch8on_V2) (AdvNP (AdvNP (UsePron it_Pron) now_Adv) today_Adv)) now_Adv)))",
+      "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePN paris_PN) (ComplSlash (SlashV2a switch8on_V2) (AdvNP (AdvNP (AdvNP (UsePron it_Pron) now_Adv) today_Adv) now_Adv))))"
+    ],
+    [ "UttS (AdvS today_Adv (AdvS (PrepNP to_Prep (UsePron it_Pron)) (UseCl (TTAnt TPres ASimul) PPos (PredVP (UsePron they_Pron) (AdvVP (ComplVA become_VA (PositA good_A)) now_Adv)))))"],
+    [ "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePN paris_PN) (AdvVP (AdvVP (UseComp (CompAP (PositA good_A))) today_Adv) today_Adv)))"],
+    [ "UttS (UseCl (TTAnt TPres ASimul) PPos (PredVP (UsePron it_Pron) (AdvVP (ComplVA become_VA (PositA bad_A)) already_Adv)))"],
+    -- 15 trees
+    [
+      "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePron they_Pron) (AdvVP (AdvVP (AdvVP (ComplSlash (SlashV2a break_V2) (UsePron she_Pron)) today_Adv) already_Adv) today_Adv)))",
+      "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePron they_Pron) (AdvVP (AdvVP (ComplSlash (SlashV2a break_V2) (AdvNP (UsePron she_Pron) today_Adv)) already_Adv) today_Adv)))",
+      "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePron they_Pron) (AdvVP (ComplSlash (SlashV2a break_V2) (AdvNP (AdvNP (UsePron she_Pron) today_Adv) already_Adv)) today_Adv)))",
+      "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePron they_Pron) (ComplSlash (SlashV2a break_V2) (AdvNP (AdvNP (AdvNP (UsePron she_Pron) today_Adv) already_Adv) today_Adv))))"
     ]
-    -- -- [
-    -- --   "UttS (AdvS today_Adv (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePron she_Pron) (AdvVP (AdvVP (ComplSlash (SlashV2a read_V2) (UsePN paris_PN)) now_Adv) now_Adv))))",
-    -- --   "UttS (AdvS today_Adv (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePron she_Pron) (AdvVP (ComplSlash (SlashV2a read_V2) (AdvNP (UsePN paris_PN) now_Adv)) now_Adv))))",
-    -- --   "UttS (AdvS today_Adv (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePron she_Pron) (ComplSlash (SlashV2a read_V2) (AdvNP (AdvNP (UsePN paris_PN) now_Adv) now_Adv)))))"
-    -- -- ],
-    -- -- [
-    -- --   "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (DetCN every_Det (UseN computer_N)) (AdvVP (ComplSlash (SlashV2a break_V2) (DetCN many_Det (UseN2 mother_N2))) now_Adv)))",
-    -- --   "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (DetCN every_Det (UseN computer_N)) (ComplSlash (SlashV2a break_V2) (AdvNP (DetCN many_Det (UseN2 mother_N2)) now_Adv))))"
-    -- -- ],
-    -- -- [
-    -- --   "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePN paris_PN) (AdvVP (AdvVP (AdvVP (ComplSlash (SlashV2a switch8on_V2) (UsePron it_Pron)) now_Adv) today_Adv) now_Adv)))",
-    -- --   "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePN paris_PN) (AdvVP (AdvVP (ComplSlash (SlashV2a switch8on_V2) (AdvNP (UsePron it_Pron) now_Adv)) today_Adv) now_Adv)))",
-    -- --   "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePN paris_PN) (AdvVP (ComplSlash (SlashV2a switch8on_V2) (AdvNP (AdvNP (UsePron it_Pron) now_Adv) today_Adv)) now_Adv)))",
-    -- --   "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePN paris_PN) (ComplSlash (SlashV2a switch8on_V2) (AdvNP (AdvNP (AdvNP (UsePron it_Pron) now_Adv) today_Adv) now_Adv))))"
-    -- -- ],
-    -- -- [ "UttS (AdvS today_Adv (AdvS (PrepNP to_Prep (UsePron it_Pron)) (UseCl (TTAnt TPres ASimul) PPos (PredVP (UsePron they_Pron) (AdvVP (ComplVA become_VA (PositA good_A)) now_Adv)))))"],
-    -- -- [ "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePN paris_PN) (AdvVP (AdvVP (UseComp (CompAP (PositA good_A))) today_Adv) today_Adv)))"],
-    -- -- [ "UttS (UseCl (TTAnt TPres ASimul) PPos (PredVP (UsePron it_Pron) (AdvVP (ComplVA become_VA (PositA bad_A)) already_Adv)))"],
-    -- -- [
-    -- --   "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePron they_Pron) (AdvVP (AdvVP (AdvVP (ComplSlash (SlashV2a break_V2) (UsePron she_Pron)) today_Adv) already_Adv) today_Adv)))",
-    -- --   "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePron they_Pron) (AdvVP (AdvVP (ComplSlash (SlashV2a break_V2) (AdvNP (UsePron she_Pron) today_Adv)) already_Adv) today_Adv)))",
-    -- --   "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePron they_Pron) (AdvVP (ComplSlash (SlashV2a break_V2) (AdvNP (AdvNP (UsePron she_Pron) today_Adv) already_Adv)) today_Adv)))",
-    -- --   "UttS (UseCl (TTAnt TPres ASimul) PNeg (PredVP (UsePron they_Pron) (ComplSlash (SlashV2a break_V2) (AdvNP (AdvNP (AdvNP (UsePron she_Pron) today_Adv) already_Adv) today_Adv))))"
-    -- -- ]
+    -- 16 trees
   ]
 {- Stats:
 Interpreted
