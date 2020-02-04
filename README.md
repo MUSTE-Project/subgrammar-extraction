@@ -33,3 +33,6 @@ Afterwards you can run it with profiling enabled:
 
 This results in a file called `subgrammar-extraction.prof` that can be
 analysed further.
+
+By also adding `-h` you can also get the heap analysis as a `.hp` file that
+can be converted by using `hp2ps`.
