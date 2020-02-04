@@ -63,3 +63,10 @@ filterGrammar funNames (Grammar absGram concs) =
       Abstract absId flags cats [f | f <- absfuns, let (FunDef (FunId fname) _) = f, fname `elem` funNames]
     filterConcrete  (Concrete concId absid flags params lincat lindef) =
       Concrete concId absid flags params lincat [f | f <- lindef, let (LinDef (FunId fname) _ _) = f, fname `elem` funNames]
+
+
+mergeRules :: [String] -> CanonicalGrammar -> CanonicalGrammar
+mergeRules = undefined -- rules = undefined
+  -- find the rules to be merged
+  -- remove the single rules
+  -- merge rules
