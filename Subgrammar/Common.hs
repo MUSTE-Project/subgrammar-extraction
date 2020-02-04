@@ -49,6 +49,7 @@ numTrees = OF numTreesOF Min
 solve :: Problem ->  IO Solution
 solve problem =
   do
+    -- Uses the MIP solver to get real binary variables, the simplex solver can return numbers between 0 and 1
     (_,solution) <- glpSolveVars mipDefaults problem
     return $ maybe (-1,[]) (\(val,vars) -> (val,[var | (var,vval) <- Map.toList vars,vval > 0])) solution
 
