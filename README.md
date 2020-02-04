@@ -21,7 +21,11 @@ that the examples are really covered.
 
 To profile the code you can build the code with profiling:
 
-```stack build --executable-profiling --ghc-options "-threaded"```
+```stack build --executable-profiling --ghc-options "-threaded"``` 
+
+or 
+
+```stack install --executable-profiling --ghc-options "-threaded -rtsopts" --pedantic```
 
 Afterwards you can run it with profiling enabled:
 
