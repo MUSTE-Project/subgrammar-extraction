@@ -31,6 +31,9 @@ import Control.Monad (guard)
 ([],[f],[(g i),h])
 -}
 
+ -- | Character to mark a hole in a tree
+hole :: String
+hole = "0"
 testTree :: Tree
 testTree =
   mkApp (mkCId "f") [mkApp (mkCId "g") [mkApp (mkCId "i") []],mkApp (mkCId "h") []]
@@ -81,7 +84,7 @@ treeToSimpleTree t =
 
 -- | Gets the root of a simple tree
 getSimpleRoot :: SimpleTree -> String
-getSimpleRoot Empty = "@"
+getSimpleRoot Empty = hole
 getSimpleRoot (Node n _) = n
 
 -- | Gets the subtrees of a simple tree
@@ -185,7 +188,7 @@ simpleSize :: SimpleTree -> Int
 simpleSize t =
   let l = simpleBfs t
   in
-    length l - (length $ filter (=="@") l)
+    length l - (length $ filter (== hole) l)
 
 -- | Filters all possible subtrees by maximum size
 maxSizeSubtrees :: SimpleTree -> Int -> [Subtrees]
@@ -193,7 +196,7 @@ maxSizeSubtrees tree size =
   let
     allTrees = allSubtrees tree
   in
-    [splitted | splitted <- allTrees, maximum (map (length . filter (/="@")) splitted) <= size]
+    [splitted | splitted <- allTrees, maximum (map (length . filter (/=hole)) splitted) <= size]
     
 
 {-
