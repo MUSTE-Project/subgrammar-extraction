@@ -58,19 +58,18 @@ examplesToForests :: Grammar -> Language -> [Example] -> [Forest]
 examplesToForests grammar language examples =
   [parse (pgf grammar) language (startCat $ pgf grammar) example | example <- examples]
 
+
 -- | Function to create a new grammar from an old grammar and a solution
 generateGrammar :: Grammar -> Solution -> IO Grammar
 generateGrammar grammar solution =
   do
     let lib_path = ".":rgl_path:[rgl_path</>subdir | subdir <- words rgl_subdirs] :: [FilePath]
-    -- read old concrete syntax
-    let options = modifyFlags (\f -> f { optLibraryPath = lib_path
-                                       })
-    (_,(concname,gfgram)) <- GF.batchCompile options $ concs grammar
-    let absname = GF.srcAbsName gfgram concname
-        canon = GF.grammar2canonical noOptions absname gfgram
+        options = modifyFlags (\f -> f { optLibraryPath = lib_path })    
+        -- read old concrete syntax
+    canon <- loadCanonicalGrammar lib_path $ concs grammar
+    let
         -- filter the grammar
-        canon' = filterGrammar (snd solution) canon
+        canon' = filterGrammar (snd solution) [] canon
         -- rename the grammar
         canon'' = renameGrammar (getAbsName canon ++ "Sub") canon'
         concs' = getConcNames canon''

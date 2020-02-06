@@ -70,3 +70,13 @@ mergeRules = undefined -- rules = undefined
   -- find the rules to be merged
   -- remove the single rules
   -- merge rules
+  
+-- | Loads a canonical grammar from a list of concrete GF files
+loadCanonicalGrammar :: [FilePath] -> [FilePath] -> IO CanonicalGrammar
+loadCanonicalGrammar libPath concs =
+  do
+    let options = modifyFlags (\f -> f { optLibraryPath = libPath })
+    (_,(concname,gfgram)) <- GF.batchCompile options concs
+    let absname = GF.srcAbsName gfgram concname
+    return $ GF.grammar2canonical noOptions absname gfgram
+    
