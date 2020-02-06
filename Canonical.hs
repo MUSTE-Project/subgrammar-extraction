@@ -84,7 +84,7 @@ lookupConcreteLin :: String -> CanonicalGrammar -> [(String, Maybe ([String],Lin
 lookupConcreteLin funId (Grammar _ concGrams) =
   map (\c@(Concrete (ModId concId) _ _ _ _ _) -> (concId,lookupConcreteLin' c)) concGrams
   where
-    lookupConcreteLin' (Concrete (ModId concId) absId flags params lincat lindef) = listToMaybe [([id' | (VarId id') <- vars],value) |(LinDef (FunId funId') vars value) <- lindef, funId' == funId]
+    lookupConcreteLin' (Concrete _ _ _ _ _ lindef) = listToMaybe [([id' | (VarId id') <- vars],value) |(LinDef (FunId funId') vars value) <- lindef, funId' == funId]
 
 -- | Merges rules
 mergeRules :: [[String]] -> CanonicalGrammar -> CanonicalGrammar
@@ -93,10 +93,10 @@ mergeRules rules g@(Grammar absGram concs) =
     -- find the rules to be merged
     singleRules = nub $ concat rules
     -- merge rules
-    mergeableRules = [(combineAbstract g r,combineConcrete g r) | r <- rules] 
+    mergeableRules = [(combineAbstract g r,combineConcrete r) | r <- rules] 
     -- remove the single rules
     allFuns = allAbsFuns g
-    g'@(Grammar absGram' concs') = filterGrammar allFuns singleRules g
+    (Grammar absGram' concs') = filterGrammar allFuns singleRules g
     -- add merged rules
     newAbs = map fst mergeableRules
     newConc = map snd mergeableRules
@@ -107,6 +107,8 @@ mergeRules rules g@(Grammar absGram concs) =
     mergeAbstract (Abstract absId flags cats funs) newFuns=
       Abstract absId flags cats (funs ++ newFuns)
     combineAbstract :: CanonicalGrammar -> [String] -> FunDef
+    combineAbstract _ [] =
+      error "Empty function list"
     combineAbstract grammar funs@(f:fs) =
       let
         funId = concat $ intersperse "_" funs
@@ -134,29 +136,30 @@ mergeRules rules g@(Grammar absGram concs) =
         getAppCat :: TypeApp -> String
         getAppCat (TypeApp (CatId c) _) = c        
     mergeConcrete :: [Concrete] -> [[(String,LinDef)]] -> [Concrete]
-    mergeConcrete concs newLins =
-      [ (Concrete (ModId concId) absId flags params lincat (lindef ++ [lin | lins <- newLins, (concId',lin) <- lins,concId' == concId])) | (Concrete (ModId concId) absId flags params lincat lindef) <- concs]
-    combineConcrete :: CanonicalGrammar -> [String] -> [(String,LinDef)]
-    combineConcrete (Grammar abs concs) funs =      
-      [(concId,combineConcrete' c funs) | c@(Concrete (ModId concId) _ _ _ _ _ ) <- concs]
+    mergeConcrete cs newLins =
+      [ (Concrete (ModId concId) absId flags params lincat (lindef ++ [lin | lins <- newLins, (concId',lin) <- lins,concId' == concId])) | (Concrete (ModId concId) absId flags params lincat lindef) <- cs]
+    combineConcrete :: [String] -> [(String,LinDef)]
+    combineConcrete funs =      
+      [(concId,combineConcrete' c) | c@(Concrete (ModId concId) _ _ _ _ _ ) <- concs]
       where
         -- In one concrete syntax, create a new LinDef from a list of rule names
-        combineConcrete' :: Concrete -> [String] -> LinDef
-        combineConcrete' conc funs@(f:fs) =
+        combineConcrete' :: Concrete -> LinDef
+        combineConcrete' conc =
           let
+            (f:fs) = funs
             linId = concat $ intersperse "_" funs
             -- First function in list, pattern matching like this includes potentially dangerous assumptions         
-            [(_,Just (vars1,lin1))] = lookupConcreteLin f (Grammar abs [conc])
+            [(_,Just (vars1,lin1))] = lookupConcreteLin f (Grammar absGram [conc])
             -- the second list of variables should be empty
             ((vars,_),linValue) =
-              foldl (\((v,v'),l) l' -> let ((w,w'),n) = substituteVar (v',l) l' in ((v++w,w'),n)) (([],vars1),lin1) [l | fun <- fs, let [(_,l)] = lookupConcreteLin fun (Grammar abs [conc])]              
+              foldl (\((v,v'),l) l' -> let ((w,w'),n) = substituteVar linId (v',l) l' in ((v++w,w'),n)) (([],vars1),lin1) [l | fun <- fs, let [(_,l)] = lookupConcreteLin fun (Grammar absGram [conc])]              
           in
             LinDef (FunId linId) (map VarId vars) linValue
           -- Replaces a variable with a linvalue and returns the new lin as well as the variables split into touched and untouched
-        substituteVar :: ([String],LinValue) -> Maybe ([String],LinValue) -> (([String],[String]),LinValue)
-        substituteVar ([],l) _ = (([],[]),l)
-        substituteVar ((v:vs),lin) Nothing = (([v],vs),lin)
-        substituteVar ((v:vs),lin) (Just (vs',lin')) = ((vs',vs), mapLinValue (substitute v lin') lin)
+        substituteVar :: String -> ([String],LinValue) -> Maybe ([String],LinValue) -> (([String],[String]),LinValue)
+        substituteVar _ ([],l) _ = (([],[]),l)
+        substituteVar _ ((v:vs),lin) Nothing = (([v],vs),lin)
+        substituteVar funId ((v:vs),lin) (Just l') = let (vs',lin') = renameVars funId l' in ((vs',vs), mapLinValue (substitute v lin') lin)
         -- Does the real substitution of the VarValue
         substitute :: String -> LinValue -> LinValue -> LinValue
         substitute v l (VarValue (VarValueId (Unqual vid))) 
