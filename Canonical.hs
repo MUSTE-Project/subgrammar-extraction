@@ -69,6 +69,21 @@ allAbsFuns :: CanonicalGrammar -> [String]
 allAbsFuns (Grammar (Abstract _ _ _ funs) _) =
   [funId | (FunDef (FunId funId) _) <- funs]
 
+-- | Looks up an abstract type from a canonical grammar
+lookupAbstractType :: String -> CanonicalGrammar -> Maybe Type
+lookupAbstractType funId (Grammar absGram _) =
+  let
+    (Abstract _ _ _ absFuns) = absGram
+  in
+    listToMaybe [funType | (FunDef (FunId funId') funType) <- absFuns, funId' == funId]
+
+-- | Looks up a linearization from a canonical grammar
+lookupConcreteLin :: String -> CanonicalGrammar -> [(String, Maybe ([String],LinValue))]
+lookupConcreteLin funId (Grammar _ concGrams) =
+  map (\c@(Concrete (ModId concId) _ _ _ _ _) -> (concId,lookupConcreteLin' c)) concGrams
+  where
+    lookupConcreteLin' (Concrete (ModId concId) absId flags params lincat lindef) = listToMaybe [([id' | (VarId id') <- vars],value) |(LinDef (FunId funId') vars value) <- lindef, funId' == funId]
+
 
 mergeRules :: [String] -> CanonicalGrammar -> CanonicalGrammar
 mergeRules = undefined -- rules = undefined
