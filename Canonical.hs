@@ -64,6 +64,11 @@ filterGrammar includedFuns excludedFuns (Grammar absGram concs) =
     filterConcrete  (Concrete concId absId flags params lincat lindef) =
       Concrete concId absId flags params lincat [f | f <- lindef, let (LinDef (FunId fname) _ _) = f, fname `elem` includedFuns, fname `notElem` excludedFuns]
 
+-- | Get all abstract funcrions from a canonical grammar
+allAbsFuns :: CanonicalGrammar -> [String]
+allAbsFuns (Grammar (Abstract _ _ _ funs) _) =
+  [funId | (FunDef (FunId funId) _) <- funs]
+
 
 mergeRules :: [String] -> CanonicalGrammar -> CanonicalGrammar
 mergeRules = undefined -- rules = undefined
