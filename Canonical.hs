@@ -54,15 +54,15 @@ getConcNames (Grammar _ concs) =
   [name | (Concrete (ModId name) _ _ _ _ _) <- concs]
 
 -- | Function to filter out rules that are not in a list of allowed ones
-filterGrammar :: [String] -> CanonicalGrammar -> CanonicalGrammar
-filterGrammar funNames (Grammar absGram concs) =
+filterGrammar :: [String] -> [String] -> CanonicalGrammar -> CanonicalGrammar
+filterGrammar includedFuns excludedFuns (Grammar absGram concs) =
   Grammar (filterAbstract absGram)
     $ map filterConcrete concs
   where
     filterAbstract (Abstract absId flags cats absfuns) =
-      Abstract absId flags cats [f | f <- absfuns, let (FunDef (FunId fname) _) = f, fname `elem` funNames]
-    filterConcrete  (Concrete concId absid flags params lincat lindef) =
-      Concrete concId absid flags params lincat [f | f <- lindef, let (LinDef (FunId fname) _ _) = f, fname `elem` funNames]
+      Abstract absId flags cats [f | f <- absfuns, let (FunDef (FunId fname) _) = f, fname `elem` includedFuns, fname `notElem` excludedFuns]
+    filterConcrete  (Concrete concId absId flags params lincat lindef) =
+      Concrete concId absId flags params lincat [f | f <- lindef, let (LinDef (FunId fname) _ _) = f, fname `elem` includedFuns, fname `notElem` excludedFuns]
 
 
 mergeRules :: [String] -> CanonicalGrammar -> CanonicalGrammar
