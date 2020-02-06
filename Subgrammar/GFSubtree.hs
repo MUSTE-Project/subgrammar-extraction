@@ -34,6 +34,7 @@ import Control.Monad (guard)
  -- | Character to mark a hole in a tree
 hole :: String
 hole = "0"
+
 testTree :: Tree
 testTree =
   mkApp (mkCId "f") [mkApp (mkCId "g") [mkApp (mkCId "i") []],mkApp (mkCId "h") []]
@@ -98,6 +99,12 @@ simpleBfs Empty = []
 simpleBfs (Node n ts) =
   filter (not . null) $ n:(map getSimpleRoot ts) ++ (concatMap simpleBfs $ concatMap getSimpleSubtrees ts)
 
+-- | Depth-first enumeration of all nodes
+simpleDfs :: SimpleTree -> [String]
+simpleDfs Empty = []
+simpleDfs (Node n ts) =
+  filter (not . null) $ n:(concatMap simpleDfs ts)
+
 -- | Path in a tree
 type Path = [Int]
 
@@ -153,7 +160,7 @@ allSubtrees tree =
     -- get all subsets and sort by longest path first
     combinations = map (sortBy (\a b -> compare (length b) (length a))) $ subsequences pathes
   in
-    map (map simpleBfs) $ map (subtrees' tree) combinations
+    map (map simpleDfs) $ map (subtrees' tree) combinations
   where
     subtrees' :: SimpleTree -> [Path] -> [SimpleTree]
     subtrees' tree' [] = [tree']
@@ -171,7 +178,7 @@ sizedSubtrees tree size =
     -- get all subsets and sort by longest path first
     combinations = map (sortBy (\a b -> compare (length b) (length a))) $ subsequences pathes
   in
-    map (map simpleBfs) $ catMaybes $ map (subtrees' tree)  combinations
+    map (map simpleDfs) $ catMaybes $ map (subtrees' tree)  combinations
   where
     subtrees' :: SimpleTree -> [Path] -> Maybe [SimpleTree]
     subtrees' tree' []
@@ -186,7 +193,7 @@ sizedSubtrees tree size =
 -- | Size of a SimpleTree
 simpleSize :: SimpleTree -> Int
 simpleSize t =
-  let l = simpleBfs t
+  let l = simpleDfs t
   in
     length l - (length $ filter (== hole) l)
 
@@ -475,7 +482,7 @@ Compiled (heap size 8GB)
 -- | Computes all subtrees (optionally up to a give size), optimized version
 sizedSubtreesByChopping :: Maybe Int -> SimpleTree -> [Subtrees]
 sizedSubtreesByChopping sizeLimit tree 
-  = map (map simpleBfs) $ chopTreeIntoBitsAndPieces sizeLimit tree
+  = map (map simpleDfs) $ chopTreeIntoBitsAndPieces sizeLimit tree
 
 
 chopTreeIntoBitsAndPieces :: Maybe Int -> SimpleTree -> [[SimpleTree]]
