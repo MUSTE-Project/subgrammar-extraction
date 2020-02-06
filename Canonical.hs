@@ -4,7 +4,7 @@ module Canonical where
 
 import System.FilePath((</>),(<.>))
 import System.Directory(createDirectoryIfMissing)
-import GF.Support(writeUTF8File)
+import GF.Support(writeUTF8File,optLibraryPath,modifyFlags,noOptions)
 import GF.Text.Pretty(render80)
 import qualified GF
 import GF.Grammar.Canonical -- (Grammar(..),ModId(..),abstrName,concName,Abstract)
