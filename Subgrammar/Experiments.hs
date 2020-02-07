@@ -6,7 +6,8 @@ import Data.Maybe
 -- import System.FilePath((</>))
 -- import Control.Concurrent.ParallelIO
 import Control.Concurrent.ParallelIO.Local
-import System.Random.Shuffle
+-- import System.Random.Shuffle
+import Test.QuickCheck
 import PGF
 import Subgrammar.Common
 import Subgrammar.GFSubtree
@@ -39,7 +40,8 @@ recreateGrammar g_r lang_r g_0 exampleCount treeDepth maxSubtreeSize repetitions
   putStrLn "  >>> Linearize trees"
   let sentences = [linearize (pgf g_r) lang_r t | t <- trees]
   putStrLn "  >>> Randomize sentences"
-  let shuffledSentences = map (\l -> shuffle' l (length l) gen) $ replicate repetitions sentences 
+--  let shuffledSentences = if repetitions > 1 then map (\l -> shuffle' l (length l) gen) $ replicate repetitions sentences else [sentences]
+  shuffledSentences <- sequence (replicate (fromIntegral repetitions) (generate (shuffle sentences)))
   putStrLn "  >>> Start process"
   -- sequence
   withPool 4 $ \p -> parallel p [(\(r,prec,re) -> (es,r,prec,re)) <$> recreateFromExamples g_r lang_r g_0 es maxSubtreeSize ofun | shuffled <- shuffledSentences,
