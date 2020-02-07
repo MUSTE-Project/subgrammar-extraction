@@ -14,13 +14,13 @@ import Subgrammar.GFSubtree
 
 -- | Returns the rules and the associated precision and recall
 recreateFromExamples :: Grammar -> Language -> Grammar -> [Example] -> Int -> ObjectiveFunction [(String, [String])] -> IO ([String],Double,Double)
-recreateFromExamples g_r lang_r g_0 examples maxSubtreeSize ofun=
+recreateFromExamples g_r lang_r g_0 examples maxSubtreeSize ofun =
   do
     -- putStrLn $ ">>> Working on " ++ show examples
     let forests = examplesToForests g_r lang_r examples
     -- create csp
     -- putStrLn $ ">>> Create problem"
-    let problem = forestsToProblem forests maxSubtreeSize ofun -- numTrees -- numRules
+    let problem = forestsToProblem forests maxSubtreeSize ofun
     -- solve problem
     -- putStrLn $ ">>> Solve problem"
     solution <- solve problem
@@ -47,8 +47,8 @@ recreateGrammar g_r lang_r g_0 exampleCount treeDepth maxSubtreeSize repetitions
   withPool 4 $ \p -> parallel p [(\(r,prec,re) -> (es,r,prec,re)) <$> recreateFromExamples g_r lang_r g_0 es maxSubtreeSize ofun | shuffled <- shuffledSentences,
                                  l <- [1..length shuffled-1], let es = (take l shuffled)]
 
-recreateExemplum :: FilePath -> IO () -- Int -> Int -> Int -> Int -> IO [([String],[String],Double,Double)]
-recreateExemplum outFile = -- exampleCount treeDepth maxSubtreeSize runs =
+recreateExemplum :: FilePath -> IO ()
+recreateExemplum outFile = 
   do
     putStrLn ">>> Load RGL"
     pgf_r_eng <- readPGF "pgfs/LangEng.pgf"
