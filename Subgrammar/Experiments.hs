@@ -73,4 +73,15 @@ recreateExemplum outFile =
       -- | exampleCount <- [1..10], treeDepth <- [4..5], maxSubtreeSize <- [1..2], repetitions <- [1..2],
       --   (oname,ofun) <- [("numRules",numRules)],(lname,lpgf_r,lpgf_0) <- [("LangEng",pgf_r_eng,pgf_0_eng),("LangGer",pgf_r_ger,pgf_0_ger),("LangFin",pgf_r_fin,pgf_0_fin),("LangSwe",pgf_r_swe,pgf_0_swe)]]
 
-compareTreebank = undefined
+compareTreebank :: Grammar -> Language -> [(String,Tree)] -> Int -> ObjectiveFunction [(String,[String])] -> IO (Double,Double)
+compareTreebank g_r lang_r treeBank maxSubtreeSize ofun =
+  do
+    let
+      examples = map fst treeBank
+      forests = examplesToForests g_r lang_r examples
+      problem = forestsToProblem forests maxSubtreeSize ofun
+    solution <- solve problem
+    g' <- generateGrammar g_r solution
+    let results = [t `elem` parse (pgf g') lang_r (startCat $ pgf g') e | (e,t) <- treeBank]
+    -- TODO: Compute results
+    return (0,0)
