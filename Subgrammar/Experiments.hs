@@ -53,9 +53,13 @@ recreateExemplum outFile =
     putStrLn ">>> Load RGL"
     pgf_r_eng <- readPGF "pgfs/LangEng.pgf"
     pgf_r_ger <- readPGF "pgfs/LangGer.pgf"
+    pgf_r_fin <- readPGF "pgfs/LangFin.pgf"
+    pgf_r_swe <- readPGF "pgfs/LangSwe.pgf"
     putStrLn ">>> Load Exemplum"
     pgf_0_eng <- readPGF $ "pgfs/ExemplumEng.pgf"
     pgf_0_ger <- readPGF $ "pgfs/ExemplumGer.pgf"
+    pgf_0_fin <- readPGF $ "pgfs/ExemplumFin.pgf"
+    pgf_0_swe <- readPGF $ "pgfs/ExemplumSwe.pgf"
     putStrLn ">>> Work Work Work"
     writeFile outFile =<< ("\"ExampleCount\";\"TreeDepth\",\"SubtreeSize\";\"ObjectiveFunction\";\"Precission\";\"Recall\";\"Rules\";\"Examples\"\n" ++) <$> unlines <$> sequence
       [(recreateGrammar (Grammar lpgf_r []) (fromJust $ readLanguage lname) (Grammar lpgf_0 []) exampleCount treeDepth maxSubtreeSize repetitions ofun >>=
@@ -64,10 +68,9 @@ recreateExemplum outFile =
                         show prec ++ ";" ++ show recall ++ ";" ++ (show $ show rules) ++ ";" ++ (show $ show examples)) | (examples,rules,prec,recall) <- results]
          )
        ) :: IO String
-      -- | exampleCount <- [1..20], treeDepth <- [4..6], maxSubtreeSize <- [1..3], repetitions <- [1..5],
-      --   (oname,ofun) <- [("numTrees",numTrees),("numRules",numRules)],(lname,lpgf) <- [("LangEng",pgf_0_eng),("LangGer",pgf_0_ger)]]
-      | exampleCount <- [1..10], treeDepth <- [4..5], maxSubtreeSize <- [1], repetitions <- [1..2],
-        (oname,ofun) <- [("numRules",numRules)],(lname,lpgf_r,lpgf_0) <- [("LangGer",pgf_r_ger,pgf_0_ger)]]    
+      | exampleCount <- [1..20], treeDepth <- [4..6], maxSubtreeSize <- [1..3], repetitions <- [1..5],
+        (oname,ofun) <- [("numTrees",numTrees),("numRules",numRules)],(lname,lpgf) <- [("LangEng",pgf_0_eng),("LangGer",pgf_0_ger),("LangFin",pgf_r_fin,pgf_0_fin),("LangSwe",pgf_r_swe,pgf_0_swe)]]
+      -- | exampleCount <- [1..10], treeDepth <- [4..5], maxSubtreeSize <- [1..2], repetitions <- [1..2],
+      --   (oname,ofun) <- [("numRules",numRules)],(lname,lpgf_r,lpgf_0) <- [("LangEng",pgf_r_eng,pgf_0_eng),("LangGer",pgf_r_ger,pgf_0_ger),("LangFin",pgf_r_fin,pgf_0_fin),("LangSwe",pgf_r_swe,pgf_0_swe)]]
 
-compareTreebank :: Grammar -> [(String,[(Language,Tree)])] -> ([(String,Tree)],Double,Double)
 compareTreebank = undefined
