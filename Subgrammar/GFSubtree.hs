@@ -295,6 +295,13 @@ forestsToProblem forests size (OF f dir) =
         [setVarKind p BinVar | p <- partitions] ++
         [setVarKind r BinVar | r <- rules]
 
+-- | Objective function to minimize the number of rules
+numRules :: ObjectiveFunction [(String,[String])]
+numRules = OF numRulesOF Min
+  where
+    numRulesOF :: [(String,[(String,[(String,[String])])])] -> ObjectiveFunc String Int
+    numRulesOF tags = linCombination [(1,r) | (_,ts) <- tags,(_,sts) <- ts,(_,rs) <- sts, r <- rs]
+
 -- | Test function
 test :: IO ()
 test = do

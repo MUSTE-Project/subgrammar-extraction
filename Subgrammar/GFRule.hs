@@ -44,6 +44,13 @@ forestsToProblem forests (OF f dir) =
           [setVarKind t BinVar | t <- trees] ++
           [setVarKind r BinVar | r <- rules]
 
+-- | Objective function to minimize the number of rules
+numRules :: ObjectiveFunction [String]
+numRules = OF numRulesOF Min
+  where
+    numRulesOF :: [(String,[(String,[String])])] -> ObjectiveFunc String Int
+    numRulesOF tags = linCombination [(1,r) | (_,ts) <- tags,(_,rs) <- ts,r <- rs]
+
 -- | Test function
 test :: IO ()
 test = do
