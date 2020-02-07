@@ -22,7 +22,9 @@ library
   -- other-extensions:
   build-depends:       base >=4.10 , glpk-hs >= 0.6, containers
                      , gf >= 3.10, filepath, directory, system-fileio, clock
-                     , benchpress, random, parallel-io, random-shuffle
+                     , benchpress, random, parallel-io
+                     , QuickCheck
+                   --, random-shuffle
   -- hs-source-dirs:
   default-language:    Haskell2010
 
@@ -33,6 +35,8 @@ executable subgrammar-extraction
   -- other-extensions:
   build-depends:       base >=4.10 , gf >= 3.10, glpk-hs >= 0.6, containers
                      , filepath, directory, system-fileio, clock
-                     , benchpress, random, parallel-io, random-shuffle
+                     , benchpress, random, parallel-io
+                     , QuickCheck
+                     --, random-shuffle
   -- hs-source-dirs:
   default-language:    Haskell2010
