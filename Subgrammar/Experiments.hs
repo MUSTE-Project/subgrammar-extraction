@@ -11,6 +11,11 @@ import Test.QuickCheck
 import PGF
 import Subgrammar.Common
 import Subgrammar.GFSubtree
+import Control.Monad
+import Data.LinearProgram.GLPK.IO
+
+-- Enables debugging
+debug = True
 
 -- | Returns the rules and the associated precision and recall
 recreateFromExamples :: Grammar -> Language -> Grammar -> [Example] -> Int -> ObjectiveFunction [(String, [String])] -> IO ([String],Double,Double)
@@ -19,13 +24,14 @@ recreateFromExamples g_r lang_r g_0 examples maxSubtreeSize ofun =
     -- putStrLn $ ">>> Working on " ++ show examples
     let forests = examplesToForests g_r lang_r examples
     -- create csp
-    -- putStrLn $ ">>> Create problem"
+    when debug $ putStrLn $ ">>> Create problem"
     let problem = forestsToProblem forests maxSubtreeSize ofun
     -- solve problem
-    -- putStrLn $ ">>> Solve problem"
+    when debug $ putStrLn $ ">>> Solve problem"
+    when debug $ writeLP "/tmp/problem.lp" problem
     solution <- solve problem
     -- get the results
-    -- putStrLn $ ">>> Analyze results"
+    when debug $ putStrLn $ ">>> Analyze results"
     let splitted = filter (/= hole) $ concat [split "#" r|r <- snd solution]
     let precision = (fromIntegral $ length (intersect (map showCId $ functions $ pgf g_0) splitted)) / (fromIntegral $ length splitted)
     let recall = (fromIntegral $ length (intersect (map showCId $ functions $ pgf g_0) splitted)) / (fromIntegral $ length (functions $ pgf g_0))
@@ -35,17 +41,16 @@ recreateFromExamples g_r lang_r g_0 examples maxSubtreeSize ofun =
 recreateGrammar :: Grammar -> Language -> Grammar -> Int -> Int -> Int -> Int -> ObjectiveFunction [(String, [String])] -> IO [([String],[String],Double,Double)]
 recreateGrammar g_r lang_r g_0 exampleCount treeDepth maxSubtreeSize repetitions ofun = do
   let gen = mkStdGen 4 -- chosen by a fair dice role
-  putStrLn "  >>> Generate trees"
+  when debug $ putStrLn "  >>> Generate trees"
   let trees = take exampleCount $ generateRandomDepth gen (pgf g_0) (startCat $ pgf g_0) (Just treeDepth)
-  putStrLn "  >>> Linearize trees"
+  when debug $ putStrLn "  >>> Linearize trees"
   let sentences = [linearize (pgf g_r) lang_r t | t <- trees]
-  putStrLn "  >>> Randomize sentences"
+
+  when debug $ putStrLn "  >>> Randomize sentences"
 --  let shuffledSentences = if repetitions > 1 then map (\l -> shuffle' l (length l) gen) $ replicate repetitions sentences else [sentences]
   shuffledSentences <- sequence (replicate (fromIntegral repetitions) (generate (shuffle sentences)))
-  putStrLn "  >>> Start process"
-  -- sequence
-  withPool 4 $ \p -> parallel p [(\(r,prec,re) -> (es,r,prec,re)) <$> recreateFromExamples g_r lang_r g_0 es maxSubtreeSize ofun | shuffled <- shuffledSentences,
-                                 l <- [1..length shuffled-1], let es = (take l shuffled)]
+  when debug (putStrLn $ show shuffledSentences)
+  when debug $ putStrLn "  >>> Start process"
 
 recreateExemplum :: FilePath -> IO ()
 recreateExemplum outFile = 
@@ -55,13 +60,12 @@ recreateExemplum outFile =
     pgf_r_ger <- readPGF "pgfs/LangGer.pgf"
     pgf_r_fin <- readPGF "pgfs/LangFin.pgf"
     pgf_r_swe <- readPGF "pgfs/LangSwe.pgf"
-    putStrLn ">>> Load Exemplum"
+    when debug $ putStrLn ">>> Load Exemplum"
     pgf_0_eng <- readPGF $ "pgfs/ExemplumEng.pgf"
     pgf_0_ger <- readPGF $ "pgfs/ExemplumGer.pgf"
     pgf_0_fin <- readPGF $ "pgfs/ExemplumFin.pgf"
     pgf_0_swe <- readPGF $ "pgfs/ExemplumSwe.pgf"
-    putStrLn ">>> Work Work Work"
-    writeFile outFile =<< ("\"ExampleCount\";\"TreeDepth\",\"SubtreeSize\";\"ObjectiveFunction\";\"Precission\";\"Recall\";\"Rules\";\"Examples\"\n" ++) <$> unlines <$> withPool 4 (\p -> sequence
+    when debug $ putStrLn ">>> Work Work Work"
       [(recreateGrammar (Grammar lpgf_r []) (fromJust $ readLanguage lname) (Grammar lpgf_0 []) exampleCount treeDepth maxSubtreeSize repetitions ofun >>=
          (\results -> return $ concat
                       [(show exampleCount ++ ";" ++ show treeDepth ++ ";" ++ show maxSubtreeSize ++ ";" ++ show repetitions ++ ";" ++ show oname ++ ";" ++
