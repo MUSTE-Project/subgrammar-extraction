@@ -70,6 +70,7 @@ recreateExemplum outFile =
     pgf_0_fin <- readPGF $ "pgfs/ExemplumFin.pgf"
     pgf_0_swe <- readPGF $ "pgfs/ExemplumSwe.pgf"
     when debug $ putStrLn ">>> Work Work Work"
+    writeFile outFile =<< ("\"ExampleCount\";\"TreeDepth\",\"SubtreeSize\";\"ObjectiveFunction\";\"Precission\";\"Recall\";\"Rules\";\"Examples\"\n" ++) <$> unlines <$> sequence
       [(recreateGrammar (Grammar lpgf_r []) (fromJust $ readLanguage lname) (Grammar lpgf_0 []) exampleCount treeDepth maxSubtreeSize repetitions ofun >>=
          (\results -> return $ concat
                       [(show exampleCount ++ ";" ++ show treeDepth ++ ";" ++ show maxSubtreeSize ++ ";" ++ show repetitions ++ ";" ++ show oname ++ ";" ++
