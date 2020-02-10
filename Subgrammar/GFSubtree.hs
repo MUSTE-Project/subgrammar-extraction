@@ -300,7 +300,7 @@ numRules :: ObjectiveFunction [(String,[String])]
 numRules = OF numRulesOF Min
   where
     numRulesOF :: [(String,[(String,[(String,[String])])])] -> ObjectiveFunc String Int
-    numRulesOF tags = linCombination [(1,r) | (_,ts) <- tags,(_,sts) <- ts,(_,rs) <- sts, r <- rs]
+    numRulesOF tags = linCombination $ nub [(1,r) | (_,ts) <- tags,(_,sts) <- ts,(_,rs) <- sts, r <- rs]
 
 -- | Test function
 test :: IO ()
