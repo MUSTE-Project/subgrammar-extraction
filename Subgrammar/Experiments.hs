@@ -51,6 +51,10 @@ recreateGrammar g_r lang_r g_0 exampleCount treeDepth maxSubtreeSize repetitions
   shuffledSentences <- sequence (replicate (fromIntegral repetitions) (generate (shuffle sentences)))
   when debug (putStrLn $ show shuffledSentences)
   when debug $ putStrLn "  >>> Start process"
+  sequence [(\(r,prec,re) -> (es,r,prec,re)) <$> recreateFromExamples g_r lang_r g_0 es maxSubtreeSize ofun | shuffled <- shuffledSentences,
+             l <- [1..length shuffled], let es = (take l shuffled)]
+    
+--  withPool 4 $ \p -> parallel p
 
 recreateExemplum :: FilePath -> IO ()
 recreateExemplum outFile = 
