@@ -3,10 +3,6 @@ module Subgrammar.Experiments where
 import System.Random (mkStdGen)
 import Data.List
 import Data.Maybe
--- import System.FilePath((</>))
--- import Control.Concurrent.ParallelIO
-import Control.Concurrent.ParallelIO.Local
--- import System.Random.Shuffle
 import Test.QuickCheck
 import PGF
 import Subgrammar.Common
