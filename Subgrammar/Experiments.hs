@@ -38,6 +38,7 @@ recreateFromExamples g_r lang_r g_0 examples maxSubtreeSize ofun =
     -- get the results
     when debug $ putStrLn $ ">>> Analyze results"
     let splitted = filter (/= hole) $ concat [split "#" r|r <- snd solution]
+    -- Only look at the "rules" in the results that are actually in the resource grammar
     let precision = (fromIntegral $ length (intersect (map showCId $ functions $ pgf g_0) splitted)) / (fromIntegral $ length (intersect (map showCId $ functions $ pgf g_r) splitted))
     let recall = (fromIntegral $ length (intersect (map showCId $ functions $ pgf g_0) splitted)) / (fromIntegral $ length (functions $ pgf g_0))
     timer <- stopTimer start
