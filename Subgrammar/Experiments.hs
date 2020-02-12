@@ -49,7 +49,7 @@ recreateGrammar :: Grammar -> Language -> Grammar -> Int -> Int -> Int -> Object
 recreateGrammar g_r lang_r g_0 treeDepth maxSubtreeSize repetitions ofun = do
   let gen = mkStdGen 4 -- chosen by a fair dice role
   when debug $ putStrLn "  >>> Generate trees"
-  let trees = take maxExampleCount $ generateRandomDepth gen (pgf g_0) (startCat $ pgf g_0) (Just treeDepth)
+  let trees = take maxExampleCount $ nub $ generateRandomDepth gen (pgf g_0) (startCat $ pgf g_0) (Just treeDepth)
   when debug $ putStrLn "  >>> Linearize trees"
   let sentences = [linearize (pgf g_r) lang_r t | t <- trees]
   when debug $ putStrLn "  >>> Randomize sentences"
