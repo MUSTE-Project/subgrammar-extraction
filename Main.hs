@@ -8,4 +8,4 @@ main :: IO ()
 main = -- putStrLn "Hello, Haskell!"
   do
 --    bench 1 $ Subgrammar.GFSubtree.treeTest
-    bench 1 $ Subgrammar.Experiments.recreateExemplum "experiment-test.log"
+    bench 1 $ Subgrammar.Experiments.recreateExemplum "experiment.csv"
