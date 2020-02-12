@@ -33,22 +33,22 @@ recreateFromExamples g_r lang_r g_0 examples maxSubtreeSize ofun =
     let splitted = filter (/= hole) $ concat [split "#" r|r <- snd solution]
     let precision = (fromIntegral $ length (intersect (map showCId $ functions $ pgf g_0) splitted)) / (fromIntegral $ length (intersect (map showCId $ functions $ pgf g_r) splitted))
     let recall = (fromIntegral $ length (intersect (map showCId $ functions $ pgf g_0) splitted)) / (fromIntegral $ length (functions $ pgf g_0))
-    time <- stopTimer start
-    return (time,splitted, precision,recall)
+    timer <- stopTimer start
+    return (timer,splitted, precision,recall)
 
 -- | Return the examples used, the rules created, precision and recall
 recreateGrammar :: Grammar -> Language -> Grammar -> Int -> Int -> Int -> Int -> ObjectiveFunction [(String, [String])] -> IO [(Int,Int,Integer,[String],[String],Double,Double)]
-recreateGrammar g_r lang_r g_0 maxExampleCount treeDepth maxSubtreeSize repetitions ofun = do
+recreateGrammar g_r lang_r g_0 maxExampleCt treeDepth maxSubtreeSize repetitions ofun = do
   let gen = mkStdGen 4 -- chosen by a fair dice role
   when debug $ putStrLn "  >>> Generate trees"
-  let trees = take maxExampleCount $ generateRandomDepth gen (pgf g_0) (startCat $ pgf g_0) (Just treeDepth)
+  let trees = take maxExampleCt $ generateRandomDepth gen (pgf g_0) (startCat $ pgf g_0) (Just treeDepth)
   when debug $ putStrLn "  >>> Linearize trees"
   let sentences = [linearize (pgf g_r) lang_r t | t <- trees]
   when debug $ putStrLn "  >>> Randomize sentences"
   shuffledSentences <- sequence (replicate (fromIntegral repetitions) (generate (shuffle sentences)))
   when debug (putStrLn $ show shuffledSentences)
   when debug $ putStrLn "  >>> Start process"
-  sequence [(\(time,rules,prec,recall) -> (count,exampleCount,time,examples,rules,prec,recall)) <$> recreateFromExamples g_r lang_r g_0 examples maxSubtreeSize ofun
+  sequence [(\(timer,rules,prec,recall) -> (count,exampleCount,timer,examples,rules,prec,recall)) <$> recreateFromExamples g_r lang_r g_0 examples maxSubtreeSize ofun
            | (count,shuffled) <- zip [1..] shuffledSentences,
              exampleCount <- [1..length shuffled],
              let examples = (take exampleCount shuffled)
