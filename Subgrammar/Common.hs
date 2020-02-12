@@ -85,15 +85,24 @@ generateGrammar grammar solution =
     return $ Grammar pgf' concs'
 
 -- | Helper function to time computations
+startTimer :: IO TimeSpec
+startTimer =
+  getTime ProcessCPUTime
+
+stopTimer :: TimeSpec -> IO Integer
+stopTimer start =
+  do
+    stop <- getTime ProcessCPUTime
+    return $ fromIntegral (sec $ diffTimeSpec start stop)
+  
 time :: IO () -> IO Integer
 time f =
   do
     putStrLn ">Timer> Start"
-    t1 <- getTime ProcessCPUTime
+    t1 <- startTimer
     f
-    t2 <- getTime ProcessCPUTime
     putStrLn ">Timer> Stop"
-    let diff = fromIntegral (sec $ diffTimeSpec t1 t2)
+    diff <- stopTimer t1
     putStrLn $ ">Timer> Difference " ++ (show diff)
     return diff
     
