@@ -75,13 +75,14 @@ recreateExemplum outFile =
       (\handle ->
           do
             hSetBuffering handle NoBuffering
-            hPutStrLn handle "\"ShuffleNo\";\"ExampleCount\";\"TreeDepth\";\"SubtreeSize\";\"ObjectiveFunction\";\"Time\";\"Precision\";\"Recall\";\"Rules\";\"Examples\""
+            hPutStrLn handle "Language;ShuffleNo;ExampleCount;TreeDepth;SubtreeSize;ObjectiveFunction;Time;Precision;Recall;Rules;Examples"
             sequence 
-              [(recreateGrammar (Grammar lpgf_r []) (fromJust $ readLanguage lname) (Grammar lpgf_0 []) maxExampleCount treeDepth maxSubtreeSize reshufflingCount ofun >>=
+              [(recreateGrammar (Grammar lpgf_r []) (fromJust $ readLanguage lname) (Grammar lpgf_0 []) treeDepth maxSubtreeSize reshufflingCount ofun >>=
                  (\results ->
                     hPutStrLn handle $ unlines
-                      [(show shuffleNo ++ ";" ++ show exampleCount ++ ";" ++ show treeDepth ++ ";" ++ show maxSubtreeSize ++ ";" ++ show oname ++ ";" ++ show time ++ ";" ++
-                        show prec ++ ";" ++ show recall ++ ";" ++ (show $ show rules) ++ ";" ++ (show $ show examples))
+                      [(lname ++ ";" ++ show shuffleNo ++ ";" ++ show exampleCount ++ ";" ++ show treeDepth ++ ";" ++
+                        show maxSubtreeSize ++ ";" ++ oname ++ ";" ++ show time ++ ";" ++ show prec ++ ";" ++
+                        show recall ++ ";" ++ show rules ++ ";" ++ show examples)
                       | (shuffleNo,exampleCount,time,examples,rules,prec,recall) <- results]
                  )
                )
