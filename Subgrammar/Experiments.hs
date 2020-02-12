@@ -13,12 +13,16 @@ import System.IO
 
 -- global parameters
 -- Enables debugging
+debug :: Bool
 debug = False
 -- how many times reshuffle the sentences
+reshufflingCount :: Int
 reshufflingCount = 3
 -- how many examples in total
+maxExampleCount :: Int
 maxExampleCount = 10
 -- lower bound for the set of examples
+minExampleCount :: Int
 minExampleCount = 1
 
 -- | Returns the rules and the associated precision and recall
@@ -81,31 +85,36 @@ recreateExemplum outFile =
           do
             hSetBuffering handle NoBuffering
             hPutStrLn handle "Language;ShuffleNo;ExampleCount;TreeDepth;SubtreeSize;ObjectiveFunction;Time;Precision;Recall;Rules;Examples"
-            sequence 
+            _ <- sequence 
               [(recreateGrammar (Grammar lpgf_r []) (fromJust $ readLanguage lname) (Grammar lpgf_0 []) treeDepth maxSubtreeSize reshufflingCount ofun >>=
                  (\results ->
-                    hPutStrLn handle $ unlines
+                    hPutStr handle $ unlines
                       [(lname ++ ";" ++ show shuffleNo ++ ";" ++ show exampleCount ++ ";" ++ show treeDepth ++ ";" ++
-                        show maxSubtreeSize ++ ";" ++ oname ++ ";" ++ show time ++ ";" ++ show prec ++ ";" ++
+                        show maxSubtreeSize ++ ";" ++ oname ++ ";" ++ show timer ++ ";" ++ show prec ++ ";" ++
                         show recall ++ ";" ++ show rules ++ ";" ++ show examples)
-                      | (shuffleNo,exampleCount,time,examples,rules,prec,recall) <- results]
+                      | (shuffleNo,exampleCount,timer,examples,rules,prec,recall) <- results]
                  )
                )
               | treeDepth <- [4..5], maxSubtreeSize <- [1..2],
                 (oname,ofun) <- [("numTrees",numTrees)], -- ("numRules",numRules)]
-                (lname,lpgf_r,lpgf_0) <- [("LangEng",pgf_r_eng,pgf_0_eng)]] -- ("LangGer",pgf_r_ger,pgf_0_ger),("LangFin",pgf_r_fin,pgf_0_fin),("LangSwe",pgf_r_swe,pgf_0_swe)]
+                (lname,lpgf_r,lpgf_0) <- [("LangEng",pgf_r_eng,pgf_0_eng)] -- ("LangGer",pgf_r_ger,pgf_0_ger),("LangFin",pgf_r_fin,pgf_0_fin),("LangSwe",pgf_r_swe,pgf_0_swe)]
+              ]
+            return ()
       )
-    return ()
+
       
 compareTreebank :: Grammar -> Language -> [(String,Tree)] -> Int -> ObjectiveFunction [(String,[String])] -> IO (Double,Double)
-compareTreebank g_r lang_r treeBank maxSubtreeSize ofun =
-  do
-    let
-      examples = map fst treeBank
-      forests = examplesToForests g_r lang_r examples
-      problem = forestsToProblem forests maxSubtreeSize ofun
-    solution <- solve problem
-    g' <- generateGrammar g_r solution
-    let results = [t `elem` parse (pgf g') lang_r (startCat $ pgf g') e | (e,t) <- treeBank]
-    -- TODO: Compute results
-    return (0,0)
+compareTreebank = undefined
+-- compareTreebank g_r lang_r treeBank maxSubtreeSize ofun =
+--   do
+--     let
+--       examples = map fst treeBank
+--       forests = examplesToForests g_r lang_r examples
+--       problem = forestsToProblem forests maxSubtreeSize ofun
+--     solution <- solve problem
+--     g' <- generateGrammar g_r solution
+--     let results = [t `elem` parse (pgf g') lang_r (startCat $ pgf g') e | (e,t) <- treeBank]
+--     -- TODO: Compute results
+--     return (0,0)
+
+
