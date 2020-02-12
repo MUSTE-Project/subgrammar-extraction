@@ -11,8 +11,15 @@ import Control.Monad
 import Data.LinearProgram.GLPK.IO
 import System.IO
 
+-- global parameters
 -- Enables debugging
-debug = True
+debug = False
+-- how many times reshuffle the sentences
+reshufflingCount = 3
+-- how many examples in total
+maxExampleCount = 10
+-- lower bound for the set of examples
+minExampleCount = 1
 
 -- | Returns the rules and the associated precision and recall
 recreateFromExamples :: Grammar -> Language -> Grammar -> [Example] -> Int -> ObjectiveFunction [(String, [String])] -> IO (Integer,[String],Double,Double)
@@ -37,11 +44,11 @@ recreateFromExamples g_r lang_r g_0 examples maxSubtreeSize ofun =
     return (timer,splitted, precision,recall)
 
 -- | Return the examples used, the rules created, precision and recall
-recreateGrammar :: Grammar -> Language -> Grammar -> Int -> Int -> Int -> Int -> ObjectiveFunction [(String, [String])] -> IO [(Int,Int,Integer,[String],[String],Double,Double)]
-recreateGrammar g_r lang_r g_0 maxExampleCt treeDepth maxSubtreeSize repetitions ofun = do
+recreateGrammar :: Grammar -> Language -> Grammar -> Int -> Int -> Int -> ObjectiveFunction [(String, [String])] -> IO [(Int,Int,Integer,[String],[String],Double,Double)]
+recreateGrammar g_r lang_r g_0 treeDepth maxSubtreeSize repetitions ofun = do
   let gen = mkStdGen 4 -- chosen by a fair dice role
   when debug $ putStrLn "  >>> Generate trees"
-  let trees = take maxExampleCt $ generateRandomDepth gen (pgf g_0) (startCat $ pgf g_0) (Just treeDepth)
+  let trees = take maxExampleCount $ generateRandomDepth gen (pgf g_0) (startCat $ pgf g_0) (Just treeDepth)
   when debug $ putStrLn "  >>> Linearize trees"
   let sentences = [linearize (pgf g_r) lang_r t | t <- trees]
   when debug $ putStrLn "  >>> Randomize sentences"
@@ -50,12 +57,9 @@ recreateGrammar g_r lang_r g_0 maxExampleCt treeDepth maxSubtreeSize repetitions
   when debug $ putStrLn "  >>> Start process"
   sequence [(\(timer,rules,prec,recall) -> (count,exampleCount,timer,examples,rules,prec,recall)) <$> recreateFromExamples g_r lang_r g_0 examples maxSubtreeSize ofun
            | (count,shuffled) <- zip [1..] shuffledSentences,
-             exampleCount <- [1..length shuffled],
+             exampleCount <- [minExampleCount..length shuffled],
              let examples = (take exampleCount shuffled)
            ]
-
-reshufflingCount = 3
-maxExampleCount = 5
 
 recreateExemplum :: FilePath -> IO ()
 recreateExemplum outFile = 
