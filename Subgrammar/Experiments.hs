@@ -85,11 +85,9 @@ recreateExemplum outFile =
                       | (shuffleNo,exampleCount,time,examples,rules,prec,recall) <- results]
                  )
                )
-      -- | exampleCount <- [1..20], treeDepth <- [4..6], maxSubtreeSize <- [1..3], repetitions <- [1..5],
-      --   (oname,ofun) <- [("numTrees",numTrees),("numRules",numRules)], (lname,lpgf_r,lpgf_0) <- [("LangEng",pgf_r_eng,pgf_0_eng),("LangGer",pgf_r_ger,pgf_0_ger),("LangFin",pgf_r_fin,pgf_0_fin),("LangSwe",pgf_r_swe,pgf_0_swe)]]
               | treeDepth <- [4..5], maxSubtreeSize <- [1..2],
-                (oname,ofun) <- [("numRules",numTrees)],
-                (lname,lpgf_r,lpgf_0) <- [("LangEng",pgf_r_eng,pgf_0_eng)]]
+                (oname,ofun) <- [("numTrees",numTrees)], -- ("numRules",numRules)]
+                (lname,lpgf_r,lpgf_0) <- [("LangEng",pgf_r_eng,pgf_0_eng)]] -- ("LangGer",pgf_r_ger,pgf_0_ger),("LangFin",pgf_r_fin,pgf_0_fin),("LangSwe",pgf_r_swe,pgf_0_swe)]
       )
     return ()
       
