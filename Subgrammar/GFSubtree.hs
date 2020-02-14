@@ -7,8 +7,9 @@ import Data.Maybe
 import Subgrammar.Common
 
 import Control.Monad.LPMonad
-import Data.LinearProgram hiding ((-),(+))
+import Data.LinearProgram (linCombination,ObjectiveFunc,Direction(..),writeLP,VarKind(BinVar))
 import System.FilePath((</>))
+import qualified Data.Map.Lazy as M
 
 import Control.Monad (guard)
 
@@ -301,6 +302,24 @@ numRules = OF numRulesOF Min
   where
     numRulesOF :: [(String,[(String,[(String,[String])])])] -> ObjectiveFunc String Int
     numRulesOF tags = linCombination $ nub [(1,r) | (_,ts) <- tags,(_,sts) <- ts,(_,rs) <- sts, r <- rs]
+
+numRulesTrees :: ObjectiveFunction [(String,[String])]
+numRulesTrees = OF numRulesOF Min
+  where
+    numRulesOF :: [(String,[(String,[(String,[String])])])] -> ObjectiveFunc String Int
+    numRulesOF tags = linCombination $ nub [(1,r) | (_,ts) <- tags,(_,sts) <- ts,(_,rs) <- sts, r <- rs] ++ nub [(1,t) | (_,ts) <- tags,(t,_) <- ts]
+
+weightedRules :: ObjectiveFunction [(String,[String])]
+weightedRules = OF numRulesOF Min
+  where
+    numRulesOF :: [(String,[(String,[(String,[String])])])] -> ObjectiveFunc String Int
+    numRulesOF tags =
+      let
+        ruleVars = [r | (_,ts) <- tags,(_,sts) <- ts,(_,rs) <- sts, r <- rs]
+        ruleFreq = Prelude.foldl (\m k -> M.alter (maybe (Just 1) (\n -> Just (n + 1))) k m) M.empty $ ruleVars
+        ruleCount = length $ nub ruleVars
+      in
+        linCombination $ nub [(round ((fromIntegral (ruleFreq M.! r) / fromIntegral ruleCount) * 100) ,r) | r <- ruleVars]
 
 -- | Test function
 test :: IO ()
