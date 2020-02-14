@@ -17,13 +17,29 @@ debug :: Bool
 debug = False
 -- how many times reshuffle the sentences
 reshufflingCount :: Int
-reshufflingCount = 3
+reshufflingCount = 1
 -- how many examples in total
 maxExampleCount :: Int
-maxExampleCount = 10
+maxExampleCount = 20
 -- lower bound for the set of examples
 minExampleCount :: Int
 minExampleCount = 1
+-- what tree depths to try
+treeDepths :: [Int]
+treeDepths = [9]
+-- what subtree sizes to try (>1 leads to an explosion in the problem size)
+subtreeSizes :: [Int]
+subtreeSizes = [1..2]
+-- objective functions to try
+objectiveFunctions :: [(String, ObjectiveFunction [(String, [String])])]
+objectiveFunctions = [("numRules",numRules)]  -- , ("numTrees",numTrees)]
+-- languages to test
+testLanguages :: [String]
+testLanguages = ["Eng", "Ger", "Fin", "Swe", "Spa"]
+-- grammar paths to be combined with the language
+grammarsDirectory = "pgfs/"
+resourceGrammarPrefix = "Lang"
+exemplumGrammarPrefix = "Exemplum"
 
 -- | Returns the rules and the associated precision and recall
 recreateFromExamples :: Grammar -> Language -> Grammar -> [Example] -> Int -> ObjectiveFunction [(String, [String])] -> IO (Integer,[String],Double,Double)
@@ -69,37 +85,31 @@ recreateGrammar g_r lang_r g_0 treeDepth maxSubtreeSize repetitions ofun = do
 recreateExemplum :: FilePath -> IO ()
 recreateExemplum outFile = 
   do
-    putStrLn ">>> Load RGL"
-    pgf_r_eng <- readPGF "pgfs/LangEng.pgf"
-    pgf_r_ger <- readPGF "pgfs/LangGer.pgf"
-    pgf_r_fin <- readPGF "pgfs/LangFin.pgf"
-    pgf_r_swe <- readPGF "pgfs/LangSwe.pgf"
+    when debug $ putStrLn $ ">>> Load RGLs: " ++ show testLanguages
+    resourceGrammars <- mapM readPGF [grammarsDirectory ++ resourceGrammarPrefix ++ lang ++ ".pgf" | lang <- testLanguages]
+    let resourceLanguages = [resourceGrammarPrefix ++ lang | lang <- testLanguages]
     when debug $ putStrLn ">>> Load Exemplum"
-    pgf_0_eng <- readPGF $ "pgfs/ExemplumEng.pgf"
-    pgf_0_ger <- readPGF $ "pgfs/ExemplumGer.pgf"
-    pgf_0_fin <- readPGF $ "pgfs/ExemplumFin.pgf"
-    pgf_0_swe <- readPGF $ "pgfs/ExemplumSwe.pgf"
+    exemplumGrammars <- mapM readPGF [grammarsDirectory ++ exemplumGrammarPrefix ++ lang ++ ".pgf" | lang <- testLanguages]
     when debug $ putStrLn ">>> Work Work Work"
     withFile outFile WriteMode
       (\handle ->
           do
             hSetBuffering handle NoBuffering
             hPutStrLn handle "Language;ShuffleNo;ExampleCount;TreeDepth;SubtreeSize;ObjectiveFunction;Time;Precision;Recall;Rules;Examples"
-            _ <- sequence 
-              [(recreateGrammar (Grammar lpgf_r []) (fromJust $ readLanguage lname) (Grammar lpgf_0 []) treeDepth maxSubtreeSize reshufflingCount ofun >>=
-                 (\results ->
-                    hPutStr handle $ unlines
-                      [(lname ++ ";" ++ show shuffleNo ++ ";" ++ show exampleCount ++ ";" ++ show treeDepth ++ ";" ++
-                        show maxSubtreeSize ++ ";" ++ oname ++ ";" ++ show timer ++ ";" ++ show prec ++ ";" ++
-                        show recall ++ ";" ++ show rules ++ ";" ++ show examples)
-                      | (shuffleNo,exampleCount,timer,examples,rules,prec,recall) <- results]
-                 )
-               )
-              | treeDepth <- [4..5], maxSubtreeSize <- [1..2],
-                (oname,ofun) <- [("numTrees",numTrees)], -- ("numRules",numRules)]
-                (lname,lpgf_r,lpgf_0) <- [("LangEng",pgf_r_eng,pgf_0_eng)] -- ("LangGer",pgf_r_ger,pgf_0_ger),("LangFin",pgf_r_fin,pgf_0_fin),("LangSwe",pgf_r_swe,pgf_0_swe)]
+            sequence 
+              [ do putStrLn $ "\n>>> TESTING: depth " ++ show treeDepth ++ "; size " ++ show maxSubtreeSize ++ "; ofun " ++ oname ++ "; lang " ++ lname ++ "; reshufflings " ++ show reshufflingCount ++ "; examples " ++ show minExampleCount ++ ".." ++ show maxExampleCount ++ "\n"
+                   results <- recreateGrammar (Grammar lpgf_r []) (fromJust $ readLanguage lname) (Grammar lpgf_0 []) treeDepth maxSubtreeSize reshufflingCount ofun
+                   hPutStr handle $ unlines
+                     [(lname ++ ";" ++ show shuffleNo ++ ";" ++ show exampleCount ++ ";" ++ show treeDepth ++ ";" ++
+                       show maxSubtreeSize ++ ";" ++ oname ++ ";" ++ show timer ++ ";" ++ show prec ++ ";" ++
+                       show recall ++ ";" ++ show rules ++ ";" ++ show examples)
+                     | (shuffleNo,exampleCount,timer,examples,rules,prec,recall) <- results]
+              | maxSubtreeSize <- subtreeSizes,
+                (lname,lpgf_r,lpgf_0) <- zip3 resourceLanguages resourceGrammars exemplumGrammars,
+                treeDepth <- treeDepths,
+                (oname,ofun) <- objectiveFunctions
               ]
-            return ()
+            hFlush handle -- should do nothing without buffering
       )
 
       
