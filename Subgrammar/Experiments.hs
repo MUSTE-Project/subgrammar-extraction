@@ -113,6 +113,11 @@ recreateExemplum outFile =
             hFlush handle -- should do nothing without buffering
       )
 
+{-
+First experiment: depth 9, numRules and all languages
+Second experiment: depth 9, finnish, all objective functions
+Third experiment: english, numRules and all depth 5..9
+-}
       
 compareTreebank :: Grammar -> Language -> [(String,Tree)] -> Int -> ObjectiveFunction [(String,[String])] -> IO (Double,Double)
 compareTreebank g_r lang_r treeBank maxSubtreeSize ofun =
