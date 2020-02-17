@@ -9,7 +9,7 @@ import Canonical
 import System.FilePath((</>),(<.>))
 import Data.LinearProgram
 import qualified Data.Map.Lazy as Map
-
+import Data.List
 import System.Clock
 
 -- | Examples are strings
@@ -43,7 +43,7 @@ numTrees :: ObjectiveFunction a
 numTrees = OF numTreesOF Min
   where
     numTreesOF :: [(String,[(String,a)])] -> ObjectiveFunc String Int
-    numTreesOF tags = linCombination [(1,t) | (_,ts) <- tags,(t,_) <- ts]
+    numTreesOF tags = linCombination $ nub [(1,t) | (_,ts) <- tags,(t,_) <- ts]
 
 -- | Solves a problem using a given objective function
 solve :: Problem ->  IO Solution
