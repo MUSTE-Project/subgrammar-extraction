@@ -10,7 +10,12 @@ import System.FilePath((</>),(<.>))
 import Data.LinearProgram
 import qualified Data.Map.Lazy as Map
 import Data.List
+import qualified Text.XML.Expat.SAX as X
+import qualified Data.ByteString.Lazy as BS
 import System.Clock
+import System.Process( system )
+import System.IO.Temp (emptySystemTempFile )
+
 
 -- | Examples are strings
 type Example = String
@@ -53,6 +58,13 @@ solve problem =
     (_,solution) <- glpSolveVars mipDefaults problem
     return $ maybe (-1,[]) (\(val,vars) -> (val,[var | (var,vval) <- Map.toList vars,vval > 0])) solution
 
+solve' :: Problem -> IO Solution
+solve' problem =
+  do
+    writeLP "/tmp/problem.lp" problem
+    solution <- runCPLEX "/home/herb/opt/cplex/cplex/bin/x86-64_linux/cplex"
+    return $ solution Map.! 0
+    
 -- | Given a grammar translate an example into a set of syntax trees
 examplesToForests :: Grammar -> Language -> [Example] -> [Forest]
 examplesToForests grammar language examples =
@@ -106,3 +118,63 @@ time f =
     putStrLn $ ">Timer> Difference " ++ (show diff)
     return diff
     
+
+
+-- Functions to use CPLEX as a solver
+-- | Function to run cplex on a LP problem
+runCPLEX :: FilePath -> IO (Map.Map Int (Double,[String]))
+runCPLEX cplex = 
+  do
+    infile <- emptySystemTempFile "cplex.in"
+    outfile <- emptySystemTempFile "cplex.sol"
+    writeFile infile $ unlines $
+      [ "r /tmp/problem.lp"
+      , "opt"
+      , "display solution variables *"
+      , "xecute rm -f " ++ outfile
+      , "write " ++ outfile ++ " all"
+      , "quit"
+      ]
+    putStrLn $ "+++ Starting CPLEX... " ++ infile
+    system $ cplex ++ " < " ++ infile ++ " &> /tmp/cplex.out"
+    putStrLn $ "+++ Reading solution..." ++ outfile
+    s <- BS.readFile outfile
+    return $ xmlToRules s
+    
+-- | Function to parse a CPLEX solution from a XML file
+xmlToRules :: BS.ByteString -> Map.Map Int (Double,[String])
+xmlToRules s =
+  saxToRules $ X.parse X.defaultParseOptions s
+  where
+    saxToRules :: [X.SAXEvent String String] -> Map.Map Int (Double,[String])
+    saxToRules = findSolution
+    findSolution :: [X.SAXEvent String String] -> Map.Map Int (Double,[String])
+    findSolution [] = Map.empty
+    findSolution (X.StartElement "CPLEXSolution" _:es) =
+      findHeader es
+    findSolution (_:es) =
+      findSolution es
+    findHeader :: [X.SAXEvent String String] -> Map.Map Int (Double,[String])
+    findHeader (X.StartElement "header" as:es)
+      | not $ elem ("solutionName","incumbent") as =
+        let
+          Just index = read <$> lookup "solutionIndex" as
+          Just obj = read <$> lookup "objectiveValue" as
+        in
+          findVariable (index,obj) es
+      | otherwise = findSolution es
+    findHeader (_:es) =
+      findHeader  es
+    findVariable :: (Int,Double) -> [X.SAXEvent String String] -> Map.Map Int (Double,[String])
+    findVariable (ct,obj) (X.StartElement "variable" as:es)
+      | elem ("value","1") as = 
+        let 
+          rs = findVariable (ct,obj) es
+          Just v = read <$> lookup "name" as
+        in --if isRule v then
+          Map.alter (Just . maybe (obj,[v]) (\(o,l) -> (o,v:l))) ct rs -- else rs
+      | otherwise = findVariable (ct,obj) es
+    findVariable _ (X.EndElement "CPLEXSolution":es) =
+      findSolution es
+    findVariable p (e:es) =
+      findVariable p es
