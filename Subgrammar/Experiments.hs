@@ -115,8 +115,20 @@ recreateExemplum outFile =
 
       
 compareTreebank :: Grammar -> Language -> [(String,Tree)] -> Int -> ObjectiveFunction [(String,[String])] -> IO (Double,Double)
-compareTreebank = undefined
--- compareTreebank g_r lang_r treeBank maxSubtreeSize ofun =
+compareTreebank g_r lang_r treeBank maxSubtreeSize ofun =
+  do
+    let
+      examples = map fst treeBank
+      forests = examplesToForests g_r lang_r examples
+      problem = forestsToProblem forests maxSubtreeSize ofun
+    solution <- solve problem
+    g' <- generateGrammar g_r solution
+--    let accuracy = length (filter id [t `elem` parse (pgf g') lang_r (startCat $ pgf g') e | (e,t) <- treeBank]) / length treeBank
+    let accuracy = sum [maximum [length (intersect (flatten t) (flatten p)) | p <-parses ] | (e,t) <- treeBank, let parses = parse (pgf g') lang_r (startCat $ pgf g') e] / sum [length $ flatten t | (_,t) <- treeBank ]
+    let ambiguity = sum [ length $ parse (pgf g') lang_r (startCat $ pgf g') e | (e,t) <- treeBank] / length treeBank
+    return (accuracy,0)
+
+
 --   do
 --     let
 --       examples = map fst treeBank
