@@ -1,6 +1,6 @@
 module Subgrammar.Experiments where
 
-import System.Random (mkStdGen)
+import System.Random (mkStdGen,setStdGen)
 import Data.List
 import Data.Maybe
 import Test.QuickCheck
@@ -68,6 +68,7 @@ recreateFromExamples g_r lang_r g_0 examples maxSubtreeSize ofun =
 recreateGrammar :: Grammar -> Language -> Grammar -> Int -> Int -> Int -> ObjectiveFunction [(String, [String])] -> IO [(Int,Int,Integer,[String],[String],Double,Double)]
 recreateGrammar g_r lang_r g_0 treeDepth maxSubtreeSize repetitions ofun = do
   let gen = mkStdGen 4 -- chosen by a fair dice role
+  setStdGen gen
   when debug $ putStrLn "  >>> Generate trees"
   let trees = take maxExampleCount $ nub $ generateRandomDepth gen (pgf g_0) (startCat $ pgf g_0) (Just treeDepth)
   when debug $ putStrLn "  >>> Linearize trees"
