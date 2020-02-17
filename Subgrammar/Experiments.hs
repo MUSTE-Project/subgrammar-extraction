@@ -128,10 +128,10 @@ compareTreebank g_r lang_r treeBank maxSubtreeSize ofun =
       problem = forestsToProblem forests maxSubtreeSize ofun
     solution <- solve problem
     g' <- generateGrammar g_r solution
---    let accuracy = length (filter id [t `elem` parse (pgf g') lang_r (startCat $ pgf g') e | (e,t) <- treeBank]) / length treeBank
-    let accuracy = sum [maximum [length (intersect (flatten t) (flatten p)) | p <-parses ] | (e,t) <- treeBank, let parses = parse (pgf g') lang_r (startCat $ pgf g') e] / sum [length $ flatten t | (_,t) <- treeBank ]
-    let ambiguity = sum [ length $ parse (pgf g') lang_r (startCat $ pgf g') e | (e,t) <- treeBank] / length treeBank
-    return (accuracy,0)
+--    let accuracy = (fromIntegral $ length $ filter id [t `elem` parse (pgf g') lang_r (startCat $ pgf g') e | (e,t) <- treeBank]) / (fromIntegral $ length treeBank) :: Double
+    let accuracy = (fromIntegral $ sum [maximum [length (intersect (flatten t) (flatten p)) | p <-parses ] | (e,t) <- treeBank, let parses = parse (pgf g') lang_r (startCat $ pgf g') e]) / (fromIntegral $ sum [length $ flatten t | (_,t) <- treeBank ]) :: Double
+    let ambiguity = (fromIntegral $ sum [ length $ parse (pgf g') lang_r (startCat $ pgf g') e | (e,t) <- treeBank]) / (fromIntegral $ length treeBank) :: Double
+    return (accuracy,ambiguity)
 
 
 --   do
