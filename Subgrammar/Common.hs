@@ -43,6 +43,10 @@ rgl_path = "../gf-rgl/src"
 rgl_subdirs :: String
 rgl_subdirs = "abstract common prelude english"
 
+-- | Converts a GF tree to a list of rules
+flatten :: Tree -> [String]
+flatten tree = maybe [] (\(f,ts) -> (showCId f):(concatMap flatten ts)) $ unApp tree
+
 -- | Objective function counting the number of trees
 numTrees :: ObjectiveFunction a
 numTrees = OF numTreesOF Min

@@ -7,10 +7,6 @@ import Data.LinearProgram
 import System.FilePath((</>))
 
 import PGF
-
--- | Converts a GF tree to a list of rules
-flatten :: Tree -> [String]
-flatten tree = maybe [] (\(f,ts) -> (showCId f):(concatMap flatten ts)) $ unApp tree
   
 -- Translate a list of forests into a constraint problem
 forestsToProblem :: [Forest] -> ObjectiveFunction [String] -> Problem
