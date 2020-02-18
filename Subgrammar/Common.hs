@@ -65,8 +65,9 @@ solve problem =
 solveCPLEX :: Problem -> IO Solution
 solveCPLEX problem =
   do
-    writeLP "/tmp/problem.lp" problem
-    solution <- runCPLEX "/home/herb/opt/cplex/cplex/bin/x86-64_linux/cplex"
+    lpFile <- emptySystemTempFile "problem"
+    writeLP lpFile problem
+    solution <- runCPLEX "/home/herb/opt/cplex/cplex/bin/x86-64_linux/cplex" lpFile
     return $ solution Map.! 0
     
 -- | Given a grammar translate an example into a set of syntax trees
@@ -126,13 +127,13 @@ time f =
 
 -- Functions to use CPLEX as a solver
 -- | Function to run cplex on a LP problem
-runCPLEX :: FilePath -> IO (Map.Map Int (Double,[String]))
-runCPLEX cplex = 
+runCPLEX :: FilePath -> FilePath -> IO (Map.Map Int (Double,[String]))
+runCPLEX cplex lpFile = 
   do
     infile <- emptySystemTempFile "cplex.in"
     outfile <- emptySystemTempFile "cplex.sol"
     writeFile infile $ unlines $
-      [ "r /tmp/problem.lp"
+      [ "r " ++ lpFile
       , "opt"
       , "display solution variables *"
       , "xecute rm -f " ++ outfile
