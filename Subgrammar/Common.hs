@@ -62,8 +62,8 @@ solve problem =
     (_,solution) <- glpSolveVars mipDefaults problem
     return $ maybe (-1,[]) (\(val,vars) -> (val,[var | (var,vval) <- Map.toList vars,vval > 0])) solution
 
-solve' :: Problem -> IO Solution
-solve' problem =
+solveCPLEX :: Problem -> IO Solution
+solveCPLEX problem =
   do
     writeLP "/tmp/problem.lp" problem
     solution <- runCPLEX "/home/herb/opt/cplex/cplex/bin/x86-64_linux/cplex"
