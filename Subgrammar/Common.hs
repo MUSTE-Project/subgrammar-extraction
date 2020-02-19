@@ -67,7 +67,7 @@ solveCPLEX problem =
   do
     lpFile <- emptySystemTempFile "problem.lp"
     writeLP lpFile problem
-    solution <- runCPLEX "/home/herb/opt/cplex/cplex/bin/x86-64_linux/cplex" lpFile
+    solution <- runCPLEX "~/opt/cplex/cplex/bin/x86-64_linux/cplex" lpFile
     return $ solution Map.! 0
     
 -- | Given a grammar translate an example into a set of syntax trees
@@ -135,7 +135,7 @@ runCPLEX cplex lpFile =
     writeFile infile $ unlines $
       [ "r " ++ lpFile
       , "opt"
-      , "display solution variables *"
+--      , "display solution variables *"
       , "xecute rm -f " ++ outfile
       , "write " ++ outfile ++ " all"
       , "quit"
