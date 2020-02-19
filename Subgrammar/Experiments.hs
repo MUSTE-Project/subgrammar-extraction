@@ -14,7 +14,7 @@ import System.IO
 -- global parameters
 -- Enables debugging
 debug :: Bool
-debug = False
+debug = True
 -- how many times reshuffle the sentences
 reshufflingCount :: Int
 reshufflingCount = 1
@@ -26,13 +26,13 @@ minExampleCount :: Int
 minExampleCount = 1
 -- what tree depths to try
 treeDepths :: [Int]
-treeDepths = [9]
+treeDepths = [6]
 -- what subtree sizes to try (>1 leads to an explosion in the problem size)
 subtreeSizes :: [Int]
-subtreeSizes = [1..2]
+subtreeSizes = [2]
 -- objective functions to try
 objectiveFunctions :: [(String, ObjectiveFunction [(String, [String])])]
-objectiveFunctions = [("numRules",numRules)]  -- , ("numTrees",numTrees)]
+objectiveFunctions = [("numTrees",numTrees)] -- ("numRules",numRules)]  -- , ("numTrees",numTrees)]
 -- languages to test
 testLanguages :: [String]
 testLanguages = ["Eng", "Ger", "Fin", "Swe", "Spa"]
@@ -53,8 +53,8 @@ recreateFromExamples g_r lang_r g_0 examples maxSubtreeSize ofun =
     let problem = forestsToProblem forests maxSubtreeSize ofun
     -- solve problem
     when debug $ putStrLn $ ">>> Solve problem"
-    when debug $ writeLP "/tmp/problem.lp" problem
-    solution <- solve problem
+    -- when debug $ writeLP "/tmp/problem.lp" problem
+    solution <- solveCPLEX problem
     -- get the results
     when debug $ putStrLn $ ">>> Analyze results"
     let splitted = filter (/= hole) $ concat [split "#" r|r <- snd solution]
