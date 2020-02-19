@@ -15,6 +15,11 @@ build-type:          Simple
 extra-source-files:  CHANGELOG.md
 cabal-version:       >=1.10
 
+Flag CPLEX
+  Description: Use the CPLEX solver
+  Default:     False
+  Manual:      True
+
 library
   exposed-modules:     Subgrammar.GFRule, Subgrammar.GFSubtree
                      , Canonical, Subgrammar.Common, Subgrammar.Experiments
@@ -24,7 +29,10 @@ library
                      , gf >= 3.10, filepath, directory, system-fileio, clock
                      , benchpress, random, parallel-io
                      , QuickCheck
-                   --, random-shuffle
+                     , hexpat
+                     , bytestring
+		     , process
+                     , temporary
   -- hs-source-dirs:
   default-language:    Haskell2010
 
@@ -37,6 +45,9 @@ executable subgrammar-extraction
                      , filepath, directory, system-fileio, clock
                      , benchpress, random, parallel-io
                      , QuickCheck
-                     --, random-shuffle
+                     , hexpat
+                     , bytestring
+		     , process
+                     , temporary
   -- hs-source-dirs:
   default-language:    Haskell2010
