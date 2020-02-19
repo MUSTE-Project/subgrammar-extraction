@@ -37,7 +37,7 @@ type Problem = LP String Int -- Problem { trees :: [(String,[String])], rules ::
 
 -- Constants -> Have to be updated
 path_to_exemplum :: String
-path_to_exemplum = "../mulle-grammars/exemplum"
+path_to_exemplum = "../mulle-grammars/Exemplum"
 rgl_path :: String
 rgl_path = "../gf-rgl/src"
 rgl_subdirs :: String
