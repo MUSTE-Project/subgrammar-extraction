@@ -13,6 +13,9 @@ import qualified Data.Map.Lazy as M
 
 import Control.Monad (guard)
 
+import System.IO.Unsafe (unsafePerformIO)
+import Text.Printf (printf)
+
 {-
       f
     /  \
@@ -205,76 +208,26 @@ maxSizeSubtrees tree size =
     allTrees = allSubtrees tree
   in
     [splitted | splitted <- allTrees, maximum (map (length . filter (/=hole)) splitted) <= size]
-    
-
-{-
-Code to just look at all possible subtrees, not just valid segmentations
-
-data PruneOpts = PruneOpts
-  { pruneDepth :: Maybe Int
-  , pruneSize  :: Maybe Int
-  } deriving Show
-
-emptyPruneOpts :: PruneOpts
-emptyPruneOpts = PruneOpts Nothing Nothing
 
 
-splitAndPrune :: PruneOpts -> SimpleTree -> [(SimpleTree, Path, SimpleTree, [SimpleTree])]
-splitAndPrune opts base_tree =
-    do (adj_path, split_tree) <- splitBaseTree base_tree
-       (adj_tree, pruned_children) <- getPrunedTrees opts split_tree
-       return (base_tree, adj_path, adj_tree, pruned_children)
 
-splitBaseTree :: SimpleTree -> [(Path, SimpleTree)]
-splitBaseTree tree@(Node _ children)
-    = ([], tree) : [ (n:path, tree') |
-                     (n, child) <- zip [0..] children,
-                     (path, tree') <- splitBaseTree child ]
-splitBaseTree _ = error "Muste.Prune.splitBaseTree: Non-exhaustive pattern match"
-
-
-getPrunedTrees :: PruneOpts -> SimpleTree -> [(SimpleTree, [SimpleTree])]
-getPrunedTrees (PruneOpts depthLimit sizeLimit) tree 
-    = [ (tree, branches) | (tree, branches, _) <- pruneTs tree [] 0 0 ]
-    where pruneTs :: SimpleTree -> [SimpleTree] -> Int -> Int -> [(SimpleTree, [SimpleTree], Int)]
-          pruneTs tree@(Node fun children) branches depth size 
-              = (Empty, tree:branches, size) :
-                do guard $ depth `less` depthLimit && size `less` sizeLimit
-                   (children', branches', size') <- pruneCs children branches (depth+1) (size+1) 
-                   return (Node fun children', branches', size')
-          pruneTs tree branches _depth size 
-              = [(tree, branches, size)]
-
-          pruneCs :: [SimpleTree] -> [SimpleTree] -> Int -> Int -> [([SimpleTree], [SimpleTree], Int)]
-          pruneCs [] branches _depth size = return ([], branches, size)
-          pruneCs (tree:trees) branches depth size 
-              = do (tree', branches', size') <- pruneTs tree branches depth size 
-                   (trees', branches'', size'') <- pruneCs trees branches' depth size' 
-                   return (tree':trees', branches'', size'')
-
-          value `less` Just limit = value < limit
-          _     `less` Nothing    = True
-
-  
--}
-  
 -- | Translate a list of forests into a constraint problem given a maximum subtree size
-forestsToProblem :: [Forest] -> Int -> ObjectiveFunction [(String, [String])] -> Problem
-forestsToProblem forests size (OF f dir) =
+forestsToProblem :: [Forest] -> Int -> Int -> ObjectiveFunction [(String, [String])] -> Problem
+forestsToProblem forests size mergedPerTree (OF f dir) =
   let
     -- helper to add consequtive numbers
     numbered :: [a] -> [(Int,a)]
     numbered = zip [1..]
     -- Hierarchy of tags for sentences, trees and rules
-    tags =   [(s_tag, [(t_tag,
---                        [(p_tag,map (join "#") rs) | (pn,rs) <- numbered (maxSizeSubtrees (treeToSimpleTree t) size), let p_tag = t_tag ++ "p" ++ show pn]
---                        [(p_tag,map (join "#") rs) | (pn,rs) <- numbered (sizedSubtrees (treeToSimpleTree t) size), let p_tag = t_tag ++ "p" ++ show pn]
-                        [(p_tag,map (join "#") rs) | (pn,rs) <- numbered (sizedSubtreesByChopping (Just size) (treeToSimpleTree t)), let p_tag = t_tag ++ "p" ++ show pn]
-                       )
-                      | (tn,t) <- numbered ts,let t_tag = s_tag ++ "t" ++ show tn]
-              )
-             | (sn,ts) <- numbered forests, let s_tag = "s" ++ show sn] :: [(String,[(String,[(String,[String])])])]
-      -- List of all sentence variables
+    tags = [(s_tag, [(t_tag, [(p_tag, map (join "#") rs) |
+                              (pn,rs) <- numbered (sizedSubtreesByChopping size mergedPerTree (treeToSimpleTree t)),
+                              let p_tag = t_tag ++ "p" ++ show pn])
+                    | (tn,t) <- numbered ts,
+                      let t_tag = s_tag ++ "t" ++ show tn])
+           | (sn,ts) <- numbered forests,
+             let s_tag = "s" ++ show sn]
+           :: [(String,[(String,[(String,[String])])])]
+    -- List of all sentence variables
     sentences = map fst tags 
     -- List of all tree variables
     trees = [t | (_,ts) <- tags, (t,_) <- ts]
@@ -283,7 +236,10 @@ forestsToProblem forests size (OF f dir) =
     -- List of all rule names
     rules = [r | (_,ts) <- tags, (_,ps) <- ts, (_,rs) <- ps, r <- rs]
   in
-    execLPM $ do
+   let
+    problem :: Problem
+    problem = 
+     execLPM $ do
       setDirection dir
       setObjective (f tags)
       geqTo (linCombination [(1,s) | s <- sentences]) $ length sentences
@@ -295,6 +251,26 @@ forestsToProblem forests size (OF f dir) =
         [setVarKind t BinVar | t <- trees]  ++
         [setVarKind p BinVar | p <- partitions] ++
         [setVarKind r BinVar | r <- rules]
+    printstat :: IO ()
+    printstat =
+      do let ntake = 10
+         putStrLn $ "--->"
+         let ss' = [(s, length ts) | (s, ts) <- tags]
+         let ts' = [(t, length ps) | (_, ts) <- tags, (t, ps) <- ts]
+         let ps' = [(p, length rs) | (_, ts) <- tags, (_, ps) <- ts, (p, rs) <- ps]
+         printf "Sents:  %4d   Trees/sent: %s...\n" (length ss') (show (take ntake ss'))
+         printf "Trees:  %4d   Parts/tree: %s...\n" (length ts') (show (take ntake ts'))
+         printf "Parts:  %4d   Rules/part: %s...\n" (length ps') (show (take ntake ps'))
+         let groupedRules = sort [(length g, r) | g@(r:_) <- group (sort rules)]
+         let mergedRules = [nr | nr@(_,r) <- groupedRules, '#' `elem` r]
+         printf "Rules:  %4d\n" (length groupedRules)
+         printf "Merged: %4d\n" (length mergedRules)
+         putStrLn $ "Occurrences/merged rule:"
+         let grules = if length mergedRules <= 2*ntake then mergedRules
+                      else take ntake mergedRules ++ [(0, "...")] ++ reverse (take ntake (reverse mergedRules))
+         mapM_ (\(n,r) -> printf "    %5d  %s\n" n r) grules
+         putStrLn $ "<---"
+   in unsafePerformIO (printstat >> return problem)
 
 -- | Objective function to minimize the number of rules
 numRules :: ObjectiveFunction [(String,[String])]
@@ -326,10 +302,10 @@ test :: IO ()
 test = do
   --sequence_ [(\i -> putStrLn $ "!!!> " ++ show [e]    ++ " " ++ show s ++ " " ++ show i) =<< show <$> time (test' s [e])    | e <- [0..2]++[4..9], s <- [2,3]]
   -- sequence_ [(\i -> putStrLn $ "!!!> " ++ show (take e l) ++ " " ++ show s ++ " " ++ show i) =<< show <$> time (test' s (take e l)) | let l = [0,2,4,5,6,7,8,9], e <- [1..length l], s <- [2,3]]
-  putStrLn =<< (show <$> time (test' 3 [0,2,4,5,7,8,9])) -- potetially 6
+  putStrLn =<< (show <$> time (test' 3 5 [0,2,4,5,7,8,9])) -- potetially 6
   where
-    test' :: Int -> [Int] -> IO ()
-    test' maxSize exampleNos =
+    test' :: Int -> Int -> [Int] -> IO ()
+    test' maxSize maxMergedPerTree exampleNos =
       do
         -- load grammar
         putStrLn ">>> Load grammar"
@@ -343,7 +319,7 @@ test = do
         --  putStrLn $ ">>> Tree sizes:" ++ (show $ map (map (\t -> let st = treeToSimpleTree t in (simpleSize st, length $ sizedSubtrees st maxSize))) forests)
         -- create csp
         putStrLn ">>> Convert forests to CSP"
-        let problem = forestsToProblem forests maxSize numTrees
+        let problem = forestsToProblem forests maxSize maxMergedPerTree numTrees
         --  putStrLn $ ">>> Got problem:\n" ++ show problem
         writeLP ("/tmp/problem-tmp" ++ concatMap show exampleNos ++ "-" ++ show maxSize ++ ".lp") problem
         -- solve problem
@@ -370,10 +346,11 @@ test = do
 treeTest :: IO ()
 treeTest = do
   let maxSize = 3
+  let maxMergedPerTree = 5
   let treeNumber = 8 -- max 16
   -- create csp
   putStrLn ">>> Convert forests to CSP"
-  let problem = forestsToProblem (map (map (fromJust . readExpr)) (take treeNumber exampleTrees)) maxSize numTrees
+  let problem = forestsToProblem (map (map (fromJust . readExpr)) (take treeNumber exampleTrees)) maxSize maxMergedPerTree numTrees
   -- solve problem
   putStrLn ">>> Solve the CSP"
   solution <- solve problem
@@ -505,36 +482,40 @@ Compiled (heap size 8GB)
 8 (1,3,5,6,7,8,9,10)  | 38s | 99s
 -}
 
--- | Computes all subtrees (optionally up to a give size), optimized version
-sizedSubtreesByChopping :: Maybe Int -> SimpleTree -> [Subtrees]
-sizedSubtreesByChopping sizeLimit tree 
-  = map (map simpleDfs) $ chopTreeIntoBitsAndPieces sizeLimit tree
+-- | Computes all subtrees (up to a given size), optimized version
+sizedSubtreesByChopping :: Int -> Int -> SimpleTree -> [Subtrees]
+sizedSubtreesByChopping sizeLimit maxMergedPerTree tree 
+  = map (map simpleDfs) $ chopTreeIntoBitsAndPieces sizeLimit maxMergedPerTree tree
 
 
-chopTreeIntoBitsAndPieces :: Maybe Int -> SimpleTree -> [[SimpleTree]]
-chopTreeIntoBitsAndPieces sizeLimit = chopTree
+chopTreeIntoBitsAndPieces :: Int -> Int -> SimpleTree -> [[SimpleTree]]
+chopTreeIntoBitsAndPieces sizeLimit maxMerged tree = [subtrees | (_, subtrees) <- chopTree tree]
   where 
-    chopTree :: SimpleTree -> [[SimpleTree]]
+    chopTree :: SimpleTree -> [(Int, [SimpleTree])]
     chopTree tree = 
-      do (subtree, children) <- getPrunedTrees tree
+      do (subtree, children, size) <- getPrunedTrees tree
          guard (subtree /= Empty)
-         subtrees <- chopChildren children
-         return (subtree : subtrees)
+         (merged, subtrees) <- chopChildren children
+         let merged' = if size == 1 then merged else merged + 1
+         guard (merged' <= maxMerged)
+         return (merged', subtree : subtrees)
 
-    chopChildren :: [SimpleTree] -> [[SimpleTree]]
-    chopChildren [] = return []
+    chopChildren :: [SimpleTree] -> [(Int, [SimpleTree])]
+    chopChildren [] = return (0, [])
     chopChildren (tree : trees) = 
-      do subtrees <- chopTree tree
-         subtrees' <- chopChildren trees
-         return (subtrees ++ subtrees')
+      do (merged, subtrees) <- chopTree tree
+         (merged', subtrees') <- chopChildren trees
+         let merged'' = merged + merged'
+         guard (merged'' <= maxMerged)
+         return (merged'', subtrees ++ subtrees')
 
-    getPrunedTrees :: SimpleTree -> [(SimpleTree, [SimpleTree])]
-    getPrunedTrees tree = [ (tree', branches) | (tree', branches, _) <- pruneTs tree [] 0 ]
+    getPrunedTrees :: SimpleTree -> [(SimpleTree, [SimpleTree], Int)]
+    getPrunedTrees tree = pruneTs tree [] 0
 
     pruneTs :: SimpleTree -> [SimpleTree] -> Int -> [(SimpleTree, [SimpleTree], Int)]
     pruneTs tree@(Node root children) branches size 
       = (Empty, tree:branches, size) :
-        do guard $ size `less` sizeLimit
+        do guard $ size < sizeLimit
            (children', branches', size') <- pruneCs children branches (size+1) 
            return (Node root children', branches', size')
     pruneTs tree branches size 
@@ -546,7 +527,4 @@ chopTreeIntoBitsAndPieces sizeLimit = chopTree
       = do (tree', branches', size') <- pruneTs tree branches size 
            (trees', branches'', size'') <- pruneCs trees branches' size' 
            return (tree':trees', branches'', size'')
-
-    value `less` Just limit = value < limit
-    _     `less` Nothing    = True
 

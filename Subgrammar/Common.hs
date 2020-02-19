@@ -35,6 +35,9 @@ data ObjectiveFunction a = OF { fun :: [(String,[(String,a)])] -> ObjectiveFunc 
 -- | A problem contains trees, rules and a linear programming logical formula
 type Problem = LP String Int -- Problem { trees :: [(String,[String])], rules :: [String] , formula :: LPM String Int ()}
 
+problemConstraints :: Problem -> [Constraint String Int]
+problemConstraints = constraints
+
 -- Constants -> Have to be updated
 path_to_exemplum :: String
 path_to_exemplum = "../mulle-grammars/Exemplum"
