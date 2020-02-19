@@ -132,7 +132,7 @@ runCPLEX cplex lpFile =
   do
     infile <- emptySystemTempFile "cplex.in"
     outfile <- emptySystemTempFile "cplex.sol"
-    cplexOut <- emptySystemTempFile "cplex.out
+    cplexOut <- emptySystemTempFile "cplex.out"
     writeFile infile $ unlines $
       [ "r " ++ lpFile
       , "opt"
