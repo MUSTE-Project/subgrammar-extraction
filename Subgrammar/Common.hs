@@ -65,7 +65,7 @@ solve problem =
 solveCPLEX :: Problem -> IO Solution
 solveCPLEX problem =
   do
-    lpFile <- emptySystemTempFile "problem"
+    lpFile <- emptySystemTempFile "problem.lp"
     writeLP lpFile problem
     solution <- runCPLEX "/home/herb/opt/cplex/cplex/bin/x86-64_linux/cplex" lpFile
     return $ solution Map.! 0
@@ -142,7 +142,7 @@ runCPLEX cplex lpFile =
       ]
     putStrLn $ "+++ Starting CPLEX... " ++ infile
     system $ cplex ++ " < " ++ infile ++ " &> /tmp/cplex.out"
-    putStrLn $ "+++ Reading solution..." ++ outfile
+    putStrLn $ "+++ Reading solution... " ++ outfile
     s <- BS.readFile outfile
     return $ xmlToRules s
     
