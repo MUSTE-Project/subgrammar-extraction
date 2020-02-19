@@ -13,7 +13,7 @@ import Data.List
 import qualified Text.XML.Expat.SAX as X
 import qualified Data.ByteString.Lazy as BS
 import System.Clock
-import System.Process( system )
+import System.Process( callCommand )
 import System.IO.Temp (emptySystemTempFile )
 
 
@@ -142,7 +142,7 @@ runCPLEX cplex lpFile =
       , "quit"
       ]
     putStrLn $ "+++ Starting CPLEX... " ++ infile
-    system $ cplex ++ " < " ++ infile ++ " > " ++ cplexOut ++ " 2>&1"
+    callCommand $ cplex ++ " < " ++ infile ++ " > " ++ cplexOut ++ " 2>&1"
     putStrLn $ "+++ Reading solution... " ++ outfile
     s <- BS.readFile outfile
     return $ xmlToRules s
