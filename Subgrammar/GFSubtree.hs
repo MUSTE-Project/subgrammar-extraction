@@ -198,7 +198,7 @@ forestsToProblem size mergedPerTree positive_forests negative_forests (OF f dir)
     numbered :: [a] -> [(Int,a)]
     numbered = zip [1..]
     -- Hierarchy of tags for sentences, trees and rules
-    tags = [(s_tag, [(t_tag, [(p_tag, map (join "#") rs) |
+    positive_tags = [(s_tag, [(t_tag, [(p_tag, map (join "#") rs) |
                               (pn,rs) <- numbered (sizedSubtreesByChopping size mergedPerTree (treeToSimpleTree t)),
                               let p_tag = t_tag ++ "p" ++ show pn])
                     | (tn,t) <- numbered ts,
@@ -207,40 +207,43 @@ forestsToProblem size mergedPerTree positive_forests negative_forests (OF f dir)
              let s_tag = "s" ++ show sn]
            :: [(String,[(String,[(String,[String])])])]
     -- List of all sentence variables
-    sentences = map fst tags 
+    positive_sentences = map fst positive_tags 
     -- List of all tree variables
-    trees = [t | (_,ts) <- tags, (t,_) <- ts]
+    positive_trees = [t | (_,ts) <- positive_tags, (t,_) <- ts]
+    negative_trees = [map (join "#") rs | ts <- negative_forests,t <- ts, rs <- sizedSubtreesByChopping size mergedPerTree (treeToSimpleTree t)] :: [[String]]
     -- List of all partition variables
-    partitions = [p | (_,ts) <- tags, (_,ps) <- ts, (p,_) <- ps]
+    positive_partitions = [p | (_,ts) <- positive_tags, (_,ps) <- ts, (p,_) <- ps]
     -- List of all rule names
-    rules = [r | (_,ts) <- tags, (_,ps) <- ts, (_,rs) <- ps, r <- rs]
+    positive_rules = [r | (_,ts) <- positive_tags, (_,ps) <- ts, (_,rs) <- ps, r <- rs]
+    negative_rules = [rs | ps <- negative_trees, rs <- ps]
   in
    let
     problem :: Problem
     problem = 
      execLPM $ do
       setDirection dir
-      setObjective (f tags)
-      geqTo (linCombination [(1,s) | s <- sentences]) $ length sentences
-      sequence_ [geqTo (linCombination ((-1,s):[(1,t) | (t,_) <- ts])) 0 | (s,ts) <- tags]
-      sequence_ [geqTo (linCombination ((-1,t):[(1,p) | (p,_) <- ps])) 0 | (_,ts) <- tags,(t,ps) <- ts]
-      sequence_ [geqTo (linCombination ((-(length rs),p):[(1,r) | r <- rs])) 0 | (_,ts) <- tags,(_,ps) <- ts,(p,rs) <- ps]
+      setObjective (f positive_tags)
+      geqTo (linCombination [(1,s) | s <- positive_sentences]) $ length positive_sentences
+      sequence_ [geqTo (linCombination ((-1,s):[(1,t) | (t,_) <- ts])) 0 | (s,ts) <- positive_tags]
+      sequence_ [geqTo (linCombination ((-1,t):[(1,p) | (p,_) <- ps])) 0 | (_,ts) <- positive_tags,(t,ps) <- ts]
+      sequence_ [geqTo (linCombination ((-(length rs),p):[(1,r) | r <- rs])) 0 | (_,ts) <- positive_tags,(_,ps) <- ts,(p,rs) <- ps]
+      sequence_ [leqTo (linCombination ([(1,r) | r <- rs])) ((length rs)+1) | rs <- negative_trees ]
       sequence_ $
-        [setVarKind s BinVar | s <- sentences] ++
-        [setVarKind t BinVar | t <- trees]  ++
-        [setVarKind p BinVar | p <- partitions] ++
-        [setVarKind r BinVar | r <- rules]
+        [setVarKind s BinVar | s <- positive_sentences] ++
+        [setVarKind t BinVar | t <- positive_trees]  ++
+        [setVarKind p BinVar | p <- positive_partitions] ++
+        [setVarKind r BinVar | r <- nub (positive_rules ++ negative_rules)]
     printstat :: IO ()
     printstat =
       do let ntake = 10
          putStrLn $ "--->"
-         let ss' = [(s, length ts) | (s, ts) <- tags]
-         let ts' = [(t, length ps) | (_, ts) <- tags, (t, ps) <- ts]
-         let ps' = [(p, length rs) | (_, ts) <- tags, (_, ps) <- ts, (p, rs) <- ps]
+         let ss' = [(s, length ts) | (s, ts) <- positive_tags]
+         let ts' = [(t, length ps) | (_, ts) <- positive_tags, (t, ps) <- ts]
+         let ps' = [(p, length rs) | (_, ts) <- positive_tags, (_, ps) <- ts, (p, rs) <- ps]
          printf "Sents:  %4d   Trees/sent: %s...\n" (length ss') (show (take ntake ss'))
          printf "Trees:  %4d   Parts/tree: %s...\n" (length ts') (show (take ntake ts'))
          printf "Parts:  %4d   Rules/part: %s...\n" (length ps') (show (take ntake ps'))
-         let groupedRules = sort [(length g, r) | g@(r:_) <- group (sort rules)]
+         let groupedRules = sort [(length g, r) | g@(r:_) <- group (sort positive_rules)]
          let mergedRules = [nr | nr@(_,r) <- groupedRules, '#' `elem` r]
          printf "Rules:  %4d\n" (length groupedRules)
          printf "Merged: %4d\n" (length mergedRules)
