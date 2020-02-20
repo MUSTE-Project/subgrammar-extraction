@@ -23,6 +23,7 @@ Flag CPLEX
 library
   exposed-modules:     Subgrammar.GFRule, Subgrammar.GFSubtree
                      , Canonical, Subgrammar.Common, Subgrammar.Experiments
+                     , Subgrammar.Test
   -- other-modules:
   -- other-extensions:
   build-depends:       base >=4.10 , glpk-hs >= 0.6, containers
