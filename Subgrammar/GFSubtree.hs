@@ -84,7 +84,7 @@ simpleBfs (Node n ts) =
 
 -- | Depth-first enumeration of all nodes
 simpleDfs :: SimpleTree -> [String]
-simpleDfs Empty = []
+simpleDfs Empty = ["?"]
 simpleDfs (Node n ts) =
   filter (not . null) $ n:(concatMap simpleDfs ts)
 
