@@ -191,8 +191,8 @@ maxSizeSubtrees tree size =
 
 
 -- | Translate a list of forests into a constraint problem given a maximum subtree size
-forestsToProblem :: [Forest] -> Int -> Int -> ObjectiveFunction [(String, [String])] -> Problem
-forestsToProblem forests size mergedPerTree (OF f dir) =
+forestsToProblem :: Int -> Int -> [Forest] -> [Forest] -> ObjectiveFunction [(String, [String])] -> Problem
+forestsToProblem size mergedPerTree positive_forests negative_forests (OF f dir) =
   let
     -- helper to add consequtive numbers
     numbered :: [a] -> [(Int,a)]
@@ -203,7 +203,7 @@ forestsToProblem forests size mergedPerTree (OF f dir) =
                               let p_tag = t_tag ++ "p" ++ show pn])
                     | (tn,t) <- numbered ts,
                       let t_tag = s_tag ++ "t" ++ show tn])
-           | (sn,ts) <- numbered forests,
+           | (sn,ts) <- numbered positive_forests,
              let s_tag = "s" ++ show sn]
            :: [(String,[(String,[(String,[String])])])]
     -- List of all sentence variables
