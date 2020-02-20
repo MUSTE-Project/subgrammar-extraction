@@ -279,12 +279,14 @@ numRules = OF numRulesOF Min
     numRulesOF :: [(String,[(String,[(String,[String])])])] -> ObjectiveFunc String Int
     numRulesOF tags = linCombination $ nub [(1,r) | (_,ts) <- tags,(_,sts) <- ts,(_,rs) <- sts, r <- rs]
 
+-- | Objective function to minimize the sum of rules and trees
 numRulesTrees :: ObjectiveFunction [(String,[String])]
 numRulesTrees = OF numRulesOF Min
   where
     numRulesOF :: [(String,[(String,[(String,[String])])])] -> ObjectiveFunc String Int
     numRulesOF tags = linCombination $ nub [(1,r) | (_,ts) <- tags,(_,sts) <- ts,(_,rs) <- sts, r <- rs] ++ nub [(1,t) | (_,ts) <- tags,(t,_) <- ts]
 
+-- | Objective function to minimize the sum of all rules weighted by number of occurences
 weightedRules :: ObjectiveFunction [(String,[String])]
 weightedRules = OF numRulesOF Min
   where
