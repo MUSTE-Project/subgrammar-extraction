@@ -1,4 +1,9 @@
-module Subgrammar.GFSubtree where
+module Subgrammar.GFSubtree
+  ( forestsToProblem
+  , numRules
+  , numRulesTrees
+  , weightedRules
+  ) where
 
 import PGF
 import Data.List

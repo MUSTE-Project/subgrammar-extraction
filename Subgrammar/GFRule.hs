@@ -1,4 +1,9 @@
-module Subgrammar.GFRule where
+module Subgrammar.GFRule
+  ( forestsToProblem
+  , numRules
+  , numRulesTrees
+  , weightedRules
+  ) where
 
 import Subgrammar.Common
 import Data.Maybe
