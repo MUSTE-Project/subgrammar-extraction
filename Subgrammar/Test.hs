@@ -9,42 +9,65 @@ import Data.Maybe
 import Data.LinearProgram.GLPK.IO (writeLP)
 import System.FilePath((</>))
 
+-- | Tests the algorithm using rules and only positive examples
 testRule :: IO ()
-testRule = test GFRule.forestsToProblem GFRule.numRules -- numTrees
+testRule = test GFRule.forestsToProblem GFRule.numRules False -- numTrees
 
+-- | Tests the algorithm using rules and both positive and negative examples
+testRuleNegative :: IO ()
+testRuleNegative = testNegative GFRule.forestsToProblem numTrees False -- GFRule.numRules
+
+-- | Tests the algorithm using subtrees and only positive examples
 testSubtree :: IO ()
-testSubtree = test (GFSubtree.forestsToProblem 2 3) GFSubtree.numRules -- numTrees
+testSubtree = test (GFSubtree.forestsToProblem 2 3) numTrees False -- GFSubtree.numRules
 
+testSubtreeMerge :: IO ()
+testSubtreeMerge = test (GFSubtree.forestsToProblem 2 3) numTrees True -- GFSubtree.numRules 
+
+-- | Tests the algorithm using subtrees and both positive and negative examples
+testSubtreeNegative :: IO ()
+testSubtreeNegative = testNegative (GFSubtree.forestsToProblem 2 3) numTrees False -- GFSubtree.numRules
+
+testSubtreeNegativeMerge :: IO ()
+testSubtreeNegativeMerge = testNegative (GFSubtree.forestsToProblem 2 3) numTrees True -- GFSubtree.numRules
+
+runTest :: ([Forest] -> [Forest] -> ObjectiveFunction a -> Problem) -> (ObjectiveFunction a) -> Grammar -> [Forest] -> [Forest] -> IO Solution
+runTest f o grammar pos neg =
+  do
+    -- create csp
+    putStrLn ">>> Convert forests to CSP"
+    let problem = f pos neg o
+    -- putStrLn $ ">>> Got problem:\n" ++ show problem
+    -- writeLP "/tmp/problem.lp" problem
+    -- solve problem
+    putStrLn ">>> Solve the CSP"
+    solution <- solveCPLEX problem
+    putStrLn $ ">>> Got " ++ (show $ length $ snd solution) ++ " rules with a score of " ++ (show $ fst solution) ++ ": \n" -- ++ show (snd solution)
+    return solution
+  
 -- | Test function
-test :: ([Forest] -> [Forest] -> ObjectiveFunction a -> Problem) -> (ObjectiveFunction a) -> IO ()
-test f o = do
-  -- load grammar
-  putStrLn ">>> Load grammar"
-  p <- readPGF $ path_to_exemplum</>"Exemplum.pgf"
-  let grammar = Grammar p [path_to_exemplum</>"ExemplumEng.gf"]
-  putStrLn $ ">>> Loaded " ++ (show $ length $ functions p) ++ " Rules"
-  -- convert examples
-  putStrLn ">>> Convert examples to forests"
-  let forests = examplesToForests grammar (fromJust $ readLanguage "ExemplumEng") examples
-  -- create csp
-  putStrLn ">>> Convert forests to CSP"
-  let problem = f forests [] o
-  putStrLn $ ">>> Got problem:\n" ++ show problem
-  writeLP "/tmp/problem.lp" problem
-  -- solve problem
-  putStrLn ">>> Solve the CSP"
-  solution <- solve problem
-  putStrLn $ ">>> Got " ++ (show $ length $ snd solution) ++ " rules with a score of " ++ (show $ fst solution) ++ ": \n" ++ show (snd solution)
-  -- create new grammar
-  putStrLn ">>> Create New Grammar"
-  grammar' <- generateGrammar grammar solution
-  putStrLn $ ">>> Loaded " ++ (show $ length $ functions $ pgf grammar') ++ " Rules"
+test :: ([Forest] -> [Forest] -> ObjectiveFunction a -> Problem) -> (ObjectiveFunction a) -> Bool -> IO ()
+test f o merge =
+  do
+    -- load grammar
+    putStrLn ">>> Load grammar"
+    p <- readPGF $ path_to_exemplum</>"ExemplumEng.pgf"
+    let grammar = Grammar p [path_to_exemplum</>"ExemplumEng.gf"]
+    putStrLn $ ">>> Loaded " ++ (show $ length $ functions p) ++ " Rules"
+    -- convert examples
+    putStrLn ">>> Convert examples to forests"
+    let forests = examplesToForests grammar (fromJust $ readLanguage "ExemplumEng") examples
+    solution <- runTest f o grammar forests []
+    -- create new grammar
+    putStrLn ">>> Create New Grammar"
+    grammar' <- generateGrammar grammar solution False
+    putStrLn $ ">>> Loaded " ++ (show $ length $ functions $ pgf grammar') ++ " Rules"
   -- check result
-  let testResults = testExamples grammar' (fromJust $ readLanguage "ExemplumSubEng") examples
-  if (and $ map snd testResults) then
-    putStrLn ">>> Success!!!"
-  else
-    putStrLn $ ">>> Failed covering:\n" ++ (unlines $ map fst $ filter (not . snd) testResults)
+    let testResults = testExamples grammar' (fromJust $ readLanguage "ExemplumSubEng") examples
+    if (and $ map snd testResults) then
+      putStrLn ">>> Success!!!"
+    else
+      putStrLn $ ">>> Failed covering:\n" ++ (unlines $ map fst $ filter (not . snd) testResults)
   where
     examples = [
       "few bad fathers become big",
@@ -71,10 +94,10 @@ test f o = do
     testExamples :: Grammar -> Language -> [Example] -> [(String,Bool)]
     testExamples g l es = 
       zip es $ map (not.null) $ examplesToForests g l es
+  
 
-
-testNegative :: ([Forest] -> [Forest] -> ObjectiveFunction a -> Problem) -> (ObjectiveFunction a) -> IO ()
-testNegative f o =
+testNegative :: ([Forest] -> [Forest] -> ObjectiveFunction a -> Problem) -> (ObjectiveFunction a) -> Bool ->IO ()
+testNegative f o merge =
   do
     -- load grammar
     putStrLn ">>> Load grammar"
@@ -84,19 +107,11 @@ testNegative f o =
       -- convert examples
     putStrLn ">>> Convert examples to forests"
     let positive_forests = examplesToForests grammar (fromJust $ readLanguage "ExemplumEng") positive
-    let negative_forests = examplesToForests grammar (fromJust $ readLanguage "ExemplumEng") negative
-    -- create csp
-    putStrLn ">>> Convert forests to CSP"
-    let problem = f positive_forests negative_forests o
-    putStrLn $ ">>> Got problem:\n" ++ show problem
-    writeLP "/tmp/problem.lp" problem
-    -- solve problem
-    putStrLn ">>> Solve the CSP"
-    solution <- solve problem
-    putStrLn $ ">>> Got " ++ (show $ length $ snd solution) ++ " rules with a score of " ++ (show $ fst solution) ++ ": \n" ++ show (snd solution)
+    let negative_forests = [] -- examplesToForests grammar (fromJust $ readLanguage "ExemplumEng") negative
+    solution <- runTest f o grammar positive_forests negative_forests      
     -- create new grammar
     putStrLn ">>> Create New Grammar"
-    grammar' <- generateGrammar grammar solution
+    grammar' <- generateGrammar grammar solution merge
     putStrLn $ ">>> Loaded " ++ (show $ length $ functions $ pgf grammar') ++ " Rules"
     -- check result
     let testPositiveResults = testExamples grammar' (fromJust $ readLanguage "ExemplumSubEng") positive
@@ -118,18 +133,19 @@ testNegative f o =
       "now the bad cold fathers are big",
       "every computer doesn't break many mothers now",
       "many fathers today on Paris don't hit many mothers",
-      "Paris isn't good today today"
+      "they don't love every mother",
+      "Paris isn't good today",
+      "it is blue",
+      "it doesn't come",
+      "now it doesn't become blue in John",
+      "today to it they become good now",
+      "it becomes bad already",
+      "to Paris on it today they don't close her now today"
       ]
     negative = [
-      "it is blue",
-      "they don't love every mother",
-      "it doesn't come",
       "today she doesn't read Paris now now",
-      "now it doesn't become blue in John",
       "Paris doesn't switch on it now today now",
-      "today to it they become good now",
-      "to Paris on it today they don't close her now",
-      "it becomes bad already",
+      "to Paris on it today they don't close her today now today",
       "they don't break her today already today"
         ]
     testExamples :: Grammar -> Language -> [Example] -> [(String,Bool)]
