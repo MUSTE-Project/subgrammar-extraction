@@ -3,10 +3,10 @@ module Subgrammar.GFRule where
 import Subgrammar.Common
 import Data.Maybe
 import Control.Monad.LPMonad
-import Data.LinearProgram
+import Data.LinearProgram (geqTo,leqTo,linCombination,VarKind(..),ObjectiveFunc,Direction(..),writeLP)
 import System.FilePath((</>))
 import Data.List
-
+import qualified Data.Map.Lazy as M
 import PGF
   
 -- Translate a list of forests into a constraint problem
@@ -50,6 +50,26 @@ numRules = OF numRulesOF Min
   where
     numRulesOF :: [(String,[(String,[String])])] -> ObjectiveFunc String Int
     numRulesOF tags = linCombination [(1,r) | (_,ts) <- tags,(_,rs) <- ts,r <- rs]
+
+-- | Objective function to minimize the sum of rules and trees
+numRulesTrees :: ObjectiveFunction [String]
+numRulesTrees = OF numRulesOF Min
+  where
+    numRulesOF :: [(String,[(String,[String])])] -> ObjectiveFunc String Int
+    numRulesOF tags = linCombination $ nub [(1,r) | (_,ts) <- tags,(_,rs) <- ts, r <- rs] ++ nub [(1,t) | (_,ts) <- tags,(t,_) <- ts]
+
+-- | Objective function to minimize the sum of all rules weighted by number of occurences
+weightedRules :: ObjectiveFunction [String]
+weightedRules = OF numRulesOF Min
+  where
+    numRulesOF :: [(String,[(String,[String])])] -> ObjectiveFunc String Int
+    numRulesOF tags =
+      let
+        ruleVars = [r | (_,ts) <- tags, (_,rs) <- ts, r <- rs]
+        ruleFreq = Prelude.foldl (\m k -> M.alter (maybe (Just 1) (\n -> Just (n + 1))) k m) M.empty $ ruleVars
+        ruleCount = length $ nub ruleVars
+      in
+        linCombination $ nub [(round ((fromIntegral (ruleFreq M.! r) / fromIntegral ruleCount) * 100) ,r) | r <- ruleVars]
 
 -- | Test function
 test :: IO ()
