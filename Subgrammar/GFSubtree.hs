@@ -15,7 +15,7 @@ import Control.Monad.LPMonad
 import Data.LinearProgram (linCombination,ObjectiveFunc,Direction(..),writeLP,VarKind(BinVar))
 import qualified Data.Map.Lazy as M
 
-import Control.Monad (guard)
+import Control.Monad (guard,when)
 
 import System.IO.Unsafe (unsafePerformIO)
 import Text.Printf (printf)
@@ -249,7 +249,7 @@ forestsToProblem forests size mergedPerTree (OF f dir) =
                       else take ntake mergedRules ++ [(0, "...")] ++ reverse (take ntake (reverse mergedRules))
          mapM_ (\(n,r) -> printf "    %5d  %s\n" n r) grules
          putStrLn $ "<---"
-   in unsafePerformIO (printstat >> return problem)
+   in unsafePerformIO (do { when debug printstat ; return problem } )
 
 -- | Objective function to minimize the number of rules
 numRules :: ObjectiveFunction [(String,[String])]
