@@ -23,34 +23,25 @@ forestsToProblem positive_forests negative_forests (OF f dir) =
                                | (tn,t) <- numbered ts,let t_tag = s_tag ++ "t" ++ show tn]
                        )
                       | (sn,ts) <- numbered positive_forests, let s_tag = "s" ++ show sn] :: [(String,[(String,[String])])]
-    negative_tags =   [(s_tag, [(t_tag,
-                                 flatten t
-                                )
-                               | (tn,t) <- numbered ts,let t_tag = s_tag ++ "t" ++ show tn]
-                       )
-                      | (sn,ts) <- numbered negative_forests, let s_tag = "ns" ++ show sn] :: [(String,[(String,[String])])]
+    negative_trees = [flatten t | ts<- negative_forests,t <- ts]
     -- List of all sentence variables
     positive_sentences = map fst positive_tags
-    negative_sentences = map fst negative_tags 
     -- List of all tree variables
     positive_trees = [t | (_,ts) <- positive_tags, (t,_) <- ts]
-    negative_trees = [t | (_,ts) <- negative_tags, (t,_) <- ts]
     -- List of all rule names
     positive_rules = [r | (_,ts) <- positive_tags, (_,rs) <- ts, r <- rs]
-    negative_rules = [r | (_,ts) <- negative_tags, (_,rs) <- ts, r <- rs]
+    negative_rules = [r | rs <- negative_trees, r <- rs]
   in
     execLPM $ do
       setDirection dir
       setObjective (f positive_tags)
       geqTo (linCombination [(1,s) | s <- positive_sentences]) $ length positive_sentences
-      leqTo (linCombination [(1,s) | s <- negative_sentences]) 0
       sequence_ [geqTo (linCombination ((-1,s):[(1,t) | (t,_) <- ts])) 0 | (s,ts) <- positive_tags]
-      sequence_ [leqTo (linCombination ((-1,s):[(1,t) | (t,_) <- ts])) 0 | (s,ts) <- negative_tags]
       sequence_ [geqTo (linCombination ((-(length rs),t):[(1,r) | r <- rs])) 0 | (_,ts) <- positive_tags,(t,rs) <- ts]
-      sequence_ [leqTo (linCombination ((-(length rs),t):[(1,r) | r <- rs])) (length rs) | (_,ts) <- negative_tags,(t,rs) <- ts]
+      sequence_ [leqTo (linCombination ([(1,r) | r <- rs])) (length rs) | rs <- negative_trees ]
       sequence_ $
-          [setVarKind s BinVar | s <- positive_sentences++negative_sentences] ++
-          [setVarKind t BinVar | t <- positive_trees ++ negative_trees] ++
+          [setVarKind s BinVar | s <- positive_sentences] ++
+          [setVarKind t BinVar | t <- positive_trees] ++
           [setVarKind r BinVar | r <- nub (positive_rules ++ negative_rules)]
 
 -- | Objective function to minimize the number of rules
