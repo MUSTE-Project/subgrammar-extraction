@@ -110,8 +110,8 @@ examplesToForests grammar language examples =
 
 
 -- | Function to create a new grammar from an old grammar and a solution
-generateGrammar :: Grammar -> Solution -> IO Grammar
-generateGrammar grammar solution =
+generateGrammar :: Grammar -> Solution -> Bool -> IO Grammar
+generateGrammar grammar solution merge =
   do
     let lib_path = ".":rgl_path:[rgl_path</>subdir | subdir <- words rgl_subdirs] :: [FilePath]
         options = modifyFlags (\f -> f { optLibraryPath = lib_path })    
@@ -119,7 +119,9 @@ generateGrammar grammar solution =
     canon <- loadCanonicalGrammar lib_path $ concs grammar
     let
         -- filter the grammar
-        canon' = filterGrammar (snd solution) [] canon
+        canon' = if merge then
+                   mergeRules [split "#" r | r <- snd solution, '#' `elem` r] canon -- (filterGrammar (snd solution) [] canon)
+                   else filterGrammar (snd solution) [] canon
         -- rename the grammar
         canon'' = renameGrammar (getAbsName canon ++ "Sub") canon'
         concs' = getConcNames canon''
