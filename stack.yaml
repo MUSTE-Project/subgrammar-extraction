@@ -51,6 +51,8 @@ extra-deps:
   # See discussion here:
   # https://github.com/GrammaticalFramework/gf-core/issues/32 
 #  - /src/runtime/haskell       # pgf.cabal
+- options-1.2.1.1
+- monads-tf-0.1.0.3
 - alex-3.2.5@sha256:af0c4aac67849d8b35e8c16063517642a5c6b809d09fdb040ed9369f91cb26fb,4054
 - benchpress-0.2.2.12@sha256:a425c5ef396f203e17c322d29ead8bfac60954e50dc7ec77ed50ba1286213d50,1194
 - clock-0.8@sha256:b4ae207e2d3761450060a0d0feb873269233898039c76fceef9cc1a544067767,4113
