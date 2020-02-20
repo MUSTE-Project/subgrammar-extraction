@@ -12,9 +12,6 @@ import Data.LinearProgram.GLPK.IO
 import System.IO
 
 -- global parameters
--- Enables debugging
-debug :: Bool
-debug = True
 -- how many times reshuffle the sentences
 reshufflingCount :: Int
 reshufflingCount = 1

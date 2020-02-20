@@ -16,6 +16,13 @@ import System.Clock
 import System.Process( callCommand )
 import System.IO.Temp (emptySystemTempFile )
 
+-- | Enable debug output
+debug :: Bool
+debug = True
+
+-- | Character to mark a hole in a tree
+hole :: String
+hole = "0"
 
 -- | Examples are strings
 type Example = String
@@ -45,6 +52,29 @@ rgl_path :: String
 rgl_path = "../gf-rgl/src"
 rgl_subdirs :: String
 rgl_subdirs = "abstract common prelude english"
+
+
+{- | Taken from MissingH:Data.String.Utils:
+Given a delimiter and a list of items (or strings), join the items
+by using the delimiter.
+
+Example:
+
+> join "|" ["foo", "bar", "baz"] -> "foo|bar|baz"
+-}
+join :: [a] -> [[a]] -> [a]
+join delim l = concat (intersperse delim l)
+
+-- | Splits a list at a delimiter element
+split :: Eq a => [a] -> [a] -> [[a]]
+split delim l =
+  split' l []
+  where
+    split' [] [] = []
+    split' [] acc = [reverse acc]
+    split' l'@(hd:tl) acc
+      | isPrefixOf delim l' = (reverse acc):(split' (drop (length delim) l') [])
+      | otherwise = split' tl (hd:acc)
 
 -- | Converts a GF tree to a list of rules
 flatten :: Tree -> [String]
