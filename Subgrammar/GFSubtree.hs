@@ -227,7 +227,7 @@ forestsToProblem size mergedPerTree positive_forests negative_forests (OF f dir)
       sequence_ [geqTo (linCombination ((-1,s):[(1,t) | (t,_) <- ts])) 0 | (s,ts) <- positive_tags]
       sequence_ [geqTo (linCombination ((-1,t):[(1,p) | (p,_) <- ps])) 0 | (_,ts) <- positive_tags,(t,ps) <- ts]
       sequence_ [geqTo (linCombination ((-(length rs),p):[(1,r) | r <- rs])) 0 | (_,ts) <- positive_tags,(_,ps) <- ts,(p,rs) <- ps]
-      sequence_ [leqTo (linCombination ([(1,r) | r <- rs])) ((length rs)+1) | rs <- negative_trees ]
+      sequence_ [leqTo (linCombination ([(1,r) | r <- rs])) (length rs - 1) | rs <- negative_trees ]
       sequence_ $
         [setVarKind s BinVar | s <- positive_sentences] ++
         [setVarKind t BinVar | t <- positive_trees]  ++
