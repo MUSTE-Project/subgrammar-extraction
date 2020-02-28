@@ -107,12 +107,13 @@ testNegative f o merge =
       -- convert examples
     putStrLn ">>> Convert examples to forests"
     let positive_forests = examplesToForests grammar (fromJust $ readLanguage "ExemplumEng") positive
-    let negative_forests = [] -- examplesToForests grammar (fromJust $ readLanguage "ExemplumEng") negative
+    let negative_forests = examplesToForests grammar (fromJust $ readLanguage "ExemplumEng") negative
     solution <- runTest f o grammar positive_forests negative_forests      
     -- create new grammar
     putStrLn ">>> Create New Grammar"
     grammar' <- generateGrammar grammar solution merge
     putStrLn $ ">>> Loaded " ++ (show $ length $ functions $ pgf grammar') ++ " Rules"
+    putStrLn $ (show $ functions $ pgf grammar')
     -- check result
     let testPositiveResults = testExamples grammar' (fromJust $ readLanguage "ExemplumSubEng") positive
     let testNegativeResults = testExamples grammar' (fromJust $ readLanguage "ExemplumSubEng") negative
@@ -125,29 +126,30 @@ testNegative f o merge =
   where
     positive = [
       "few bad fathers become big",
-      "now John and Paris aren't good now",
       "many cold books come today",
-      "now Paris and he today don't read few cold mothers",
-      "John becomes cold",
-      "on Paris now Paris comes",
-      "now the bad cold fathers are big",
-      "every computer doesn't break many mothers now",
-      "many fathers today on Paris don't hit many mothers",
-      "they don't love every mother",
-      "Paris isn't good today",
       "it is blue",
+      "they don't love every mother",
+      "John becomes cold",
       "it doesn't come",
-      "now it doesn't become blue in John",
-      "today to it they become good now",
+      "every computer doesn't break many mothers now",
+      "Paris doesn't switch on it now today now",
+      "many fathers today on Paris don't hit many mothers",
+      "Paris isn't good today today",
       "it becomes bad already",
-      "to Paris on it today they don't close her now today"
+      "they don't break her today already today"
       ]
     negative = [
+      "now John and Paris aren't good now",
+      "now Paris and he today don't read few cold mothers",
+      "now it doesn't become blue in John",
+      "on Paris now Paris comes",
+      "now the bad cold fathers are big",
       "today she doesn't read Paris now now",
-      "Paris doesn't switch on it now today now",
-      "to Paris on it today they don't close her today now today",
-      "they don't break her today already today"
+      "today to it they become good now",
+      "to Paris on it today they don't close her now"
         ]
     testExamples :: Grammar -> Language -> [Example] -> [(String,Bool)]
     testExamples g l es = 
       zip es $ map (not.null) $ examplesToForests g l es
+
+
