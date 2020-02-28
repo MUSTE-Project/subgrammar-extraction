@@ -181,7 +181,7 @@ runCPLEX cplex lpFile =
     putStrLn $ "+++ Reading solution... " ++ outfile
     s <- BS.readFile outfile
     return $ xmlToRules s
-    
+
 -- | Function to parse a CPLEX solution from a XML file
 xmlToRules :: BS.ByteString -> Map.Map Int (Double,[String])
 xmlToRules s =
@@ -212,8 +212,7 @@ xmlToRules s =
         let 
           rs = findVariable (ct,obj) es
           Just v = read <$> lookup "name" as
-        in --if isRule v then
-          Map.alter (Just . maybe (obj,[v]) (\(o,l) -> (o,v:l))) ct rs -- else rs
+        in Map.alter (Just . maybe (obj,[v]) (\(o,l) -> (o,v:l))) ct rs        
       | otherwise = findVariable (ct,obj) es
     findVariable _ (X.EndElement "CPLEXSolution":es) =
       findSolution es
