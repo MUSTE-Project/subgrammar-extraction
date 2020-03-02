@@ -21,7 +21,7 @@ that the examples are really covered.
 
 To profile the code you can build the code with profiling:
 
-```stack build --executable-profiling --ghc-options "-threaded"``` 
+```stack install --executable-profiling --ghc-options "-threaded"``` 
 
 or 
 
@@ -36,3 +36,21 @@ analysed further.
 
 By also adding `-h` you can also get the heap analysis as a `.hp` file that
 can be converted by using `hp2ps`.
+
+
+Or you can just run it:
+
+```subgrammar-extraction --help```
+
+Here's an example that learns the language `()`, `([()])`, `([([()])])`, ... -- i.e., an odd number of matched parentheses and brackets:
+
+```
+subgrammar-extraction --pgf DyckAbs.pgf --lang DyckCnc --size 6 --merged 2 --ofun numRules "( )" "# [ ( ) ]" "( [ ( ) ] )"
+...
+>>> Solution
+empty
+main#wrap#opena#?#closea
+wrap#openb#wrap#opena#?#closea#closeb
+```
+
+(Note that with --size 5 you get a much worse solution).
