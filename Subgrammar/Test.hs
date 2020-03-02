@@ -19,17 +19,17 @@ testRuleNegative = testNegative GFRule.forestsToProblem numTrees False -- GFRule
 
 -- | Tests the algorithm using subtrees and only positive examples
 testSubtree :: IO ()
-testSubtree = test (GFSubtree.forestsToProblem 2 3) numTrees False -- GFSubtree.numRules
+testSubtree = test (GFSubtree.forestsToProblem 2 (Just 3)) numTrees False -- GFSubtree.numRules
 
 testSubtreeMerge :: IO ()
-testSubtreeMerge = test (GFSubtree.forestsToProblem 2 3) numTrees True -- GFSubtree.numRules 
+testSubtreeMerge = test (GFSubtree.forestsToProblem 2 (Just 3)) numTrees True -- GFSubtree.numRules 
 
 -- | Tests the algorithm using subtrees and both positive and negative examples
 testSubtreeNegative :: IO ()
-testSubtreeNegative = testNegative (GFSubtree.forestsToProblem 2 3) numTrees False -- GFSubtree.numRules
+testSubtreeNegative = testNegative (GFSubtree.forestsToProblem 2 (Just 5)) numTrees False -- GFSubtree.numRules
 
 testSubtreeNegativeMerge :: IO ()
-testSubtreeNegativeMerge = testNegative (GFSubtree.forestsToProblem 2 3) numTrees True -- GFSubtree.numRules
+testSubtreeNegativeMerge = testNegative (GFSubtree.forestsToProblem 2 (Just 3)) numTrees True -- GFSubtree.numRules
 
 runTest :: ([Forest] -> [Forest] -> ObjectiveFunction a -> Problem) -> (ObjectiveFunction a) -> Grammar -> [Forest] -> [Forest] -> IO Solution
 runTest f o grammar pos neg =

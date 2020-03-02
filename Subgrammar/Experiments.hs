@@ -50,7 +50,7 @@ recreateFromExamples g_r lang_r g_0 examples maxSubtreeSize maxMergedPerTree ofu
     let forests = examplesToForests g_r lang_r examples
     -- create csp
     when debug $ putStrLn $ ">>> Create problem"
-    let problem = forestsToProblem maxSubtreeSize maxMergedPerTree forests [] ofun
+    let problem = forestsToProblem maxSubtreeSize (Just maxMergedPerTree) forests [] ofun
     let problemSize = length (problemConstraints problem)
     -- solve problem
     when debug $ putStrLn $ ">>> Solve problem, size: " ++ show problemSize
@@ -128,7 +128,7 @@ compareTreebank g_r lang_r treeBank maxSubtreeSize maxMergedPerTree ofun =
     let
       examples = map fst treeBank
       forests = examplesToForests g_r lang_r examples
-      problem = forestsToProblem maxSubtreeSize maxMergedPerTree forests [] ofun
+      problem = forestsToProblem maxSubtreeSize (Just maxMergedPerTree) forests [] ofun
     solution <- solve problem
     g' <- generateGrammar g_r solution False
 --    let accuracy = (fromIntegral $ length $ filter id [t `elem` parse (pgf g') lang_r (startCat $ pgf g') e | (e,t) <- treeBank]) / (fromIntegral $ length treeBank) :: Double

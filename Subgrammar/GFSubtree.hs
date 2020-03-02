@@ -191,7 +191,7 @@ maxSizeSubtrees tree size =
 
 
 -- | Translate a list of forests into a constraint problem given a maximum subtree size
-forestsToProblem :: Int -> Int -> [Forest] -> [Forest] -> ObjectiveFunction [(String, [String])] -> Problem
+forestsToProblem :: Int -> (Maybe Int) -> [Forest] -> [Forest] -> ObjectiveFunction [(String, [String])] -> Problem
 forestsToProblem size mergedPerTree positive_forests negative_forests (OF f dir) =
   let
     -- helper to add consequtive numbers
@@ -282,12 +282,12 @@ weightedRules = OF numRulesOF Min
         linCombination $ nub [(round ((fromIntegral (ruleFreq M.! r) / fromIntegral ruleCount) * 100) ,r) | r <- ruleVars]
 
 -- | Computes all subtrees (up to a given size), optimized version
-sizedSubtreesByChopping :: Int -> Int -> SimpleTree -> [Subtrees]
+sizedSubtreesByChopping :: Int -> Maybe Int -> SimpleTree -> [Subtrees]
 sizedSubtreesByChopping sizeLimit maxMergedPerTree tree 
   = map (map simpleDfs) $ chopTreeIntoBitsAndPieces sizeLimit maxMergedPerTree tree
 
 
-chopTreeIntoBitsAndPieces :: Int -> Int -> SimpleTree -> [[SimpleTree]]
+chopTreeIntoBitsAndPieces :: Int -> Maybe Int -> SimpleTree -> [[SimpleTree]]
 chopTreeIntoBitsAndPieces sizeLimit maxMerged tree = [subtrees | (_, subtrees) <- chopTree tree]
   where 
     chopTree :: SimpleTree -> [(Int, [SimpleTree])]
@@ -296,7 +296,7 @@ chopTreeIntoBitsAndPieces sizeLimit maxMerged tree = [subtrees | (_, subtrees) <
          guard (subtree /= Empty)
          (merged, subtrees) <- chopChildren children
          let merged' = if size == 1 then merged else merged + 1
-         guard (merged' <= maxMerged)
+         guard (isNothing maxMerged || Just merged' <= maxMerged)
          return (merged', subtree : subtrees)
 
     chopChildren :: [SimpleTree] -> [(Int, [SimpleTree])]
@@ -305,7 +305,7 @@ chopTreeIntoBitsAndPieces sizeLimit maxMerged tree = [subtrees | (_, subtrees) <
       do (merged, subtrees) <- chopTree tree
          (merged', subtrees') <- chopChildren trees
          let merged'' = merged + merged'
-         guard (merged'' <= maxMerged)
+         guard (isNothing maxMerged || Just merged'' <= maxMerged)
          return (merged'', subtrees ++ subtrees')
 
     getPrunedTrees :: SimpleTree -> [(SimpleTree, [SimpleTree], Int)]
