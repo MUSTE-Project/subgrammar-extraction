@@ -15,6 +15,7 @@ import qualified Data.ByteString.Lazy as BS
 import System.Clock
 import System.Process( callCommand )
 import System.IO.Temp (emptySystemTempFile )
+import Data.Char
 
 -- | Enable debug output
 debug :: Bool
@@ -158,7 +159,16 @@ time f =
     putStrLn $ ">Timer> Difference " ++ (show diff)
     return diff
     
-
+-- | Function to check if a variable is a rule, i.e. if it is neither a variable for a sentence, a tree or a constraint
+isRule :: String -> Bool
+isRule = not . isId
+  where
+    isId [] = True
+    isId ('s':is) = isId is
+    isId ('t':is) = isId is
+    isId ('p':is) = isId is
+    isId (c  :is) | isDigit c = isId is
+    isId _  = False
 
 -- Functions to use CPLEX as a solver
 -- | Function to run cplex on a LP problem
