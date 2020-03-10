@@ -13,6 +13,10 @@ import Data.Maybe
 
 type CanonicalGrammar = GF.Grammar.Canonical.Grammar
 
+-- | String used to concatenate function names when merging
+mergeStr :: String
+mergeStr = "_M_"
+
 -- Original code Written by Thomas Hallgren
 -- (https://github.com/MUSTE-Project/gf-canonical-transforms)
 
@@ -93,30 +97,37 @@ mergeRules rules g@(Grammar absGram concs) =
     -- find the rules to be merged
     singleRules = nub $ concat rules
     -- merge rules
-    mergeableRules = [(combineAbstract g r,combineConcrete r) | r <- rules] 
+    mergeableRules = [(combineAbstract g rs,combineConcrete rs) | rs <- rules] 
     -- remove the single rules
     allFuns = allAbsFuns g
+    -- Remove all the single rules that are part of merged rules
     (Grammar absGram' concs') = filterGrammar allFuns singleRules g
-    -- add merged rules
+    -- prepare merged rules
     newAbs = map fst mergeableRules
     newConc = map snd mergeableRules
   in
+    -- create a new grammar where the rules are merged
     Grammar (mergeAbstract absGram' newAbs) (mergeConcrete concs' newConc)
   where
+    -- Merges the existing and the merged rules to a new abstract syntax
     mergeAbstract :: Abstract -> [FunDef] -> Abstract
     mergeAbstract (Abstract absId flags cats funs) newFuns=
       Abstract absId flags cats (funs ++ newFuns)
+    -- Combines a list of rules to a new abstract rule
     combineAbstract :: CanonicalGrammar -> [String] -> FunDef
     combineAbstract _ [] =
       error "Empty function list"
     combineAbstract grammar funs@(f:fs) =
       let
-        funId = concat $ intersperse "_" funs
+        -- Create new function name by putting the mergeStr between the function names
+        funId = concat $ intersperse mergeStr funs
+        -- Create new function type from the types of the single functions by stepwise updating the type
         funtype = foldl (\fullType nextPart -> updateType fullType (lookupAbstractType nextPart grammar)) (fromJust $ lookupAbstractType f grammar) fs
       in
         FunDef (FunId funId) funtype
       where
         -- | Combines two types to a new type
+        -- It looks for any parameter in the first type that has the same category as the result type of the second type
         updateType :: Type -> Maybe Type -> Type
         -- case of not a function
         updateType t@(Type [] _) _ = t
@@ -134,56 +145,89 @@ mergeRules rules g@(Grammar absGram concs) =
         getBindingCat (TypeBinding _ (Type _ app)) = getAppCat app
         -- Get the main category from a type application
         getAppCat :: TypeApp -> String
-        getAppCat (TypeApp (CatId c) _) = c        
+        getAppCat (TypeApp (CatId c) _) = c
+    -- Merges a concrete grammar with a list of newly  combined functions
+    -- Updates the lindefs for each concrete grammar where the id matches. The first component of the second parameter is the id of the concrete syntax to be updated
     mergeConcrete :: [Concrete] -> [[(String,LinDef)]] -> [Concrete]
     mergeConcrete cs newLins =
       [ (Concrete (ModId concId) absId flags params lincat (lindef ++ [lin | lins <- newLins, (concId',lin) <- lins,concId' == concId])) | (Concrete (ModId concId) absId flags params lincat lindef) <- cs]
     combineConcrete :: [String] -> [(String,LinDef)]
-    combineConcrete funs =      
+    combineConcrete funs =
+      -- -- New Version
+      -- [(concId,combineConcrete' c) | c@(Concrete (ModId concId) _ _ _ _ _ ) <- concs]
+      -- where        
+      --   -- In one concrete syntax, create a new LinDef from a list of rule names
+      --   combineConcrete' :: Concrete -> LinDef
+      --   combineConcrete' conc =
+      --     let
+      --       -- split funs into head and tail
+      --       (f:fs) = funs
+      --       -- create new linId
+      --       linId = concat $ intersperse mergeStr funs
+      --       -- First function in list, pattern matching like this includes potentially dangerous assumptions, i.e. that function must exist
+      --       [(_,Just (vars1,lin1))] = lookupConcreteLin f (Grammar absGram [conc])
+      --       -- the second list of variables should be empty
+      --       vars =
+      --         foldl (\(LinDef 
+      --           vars1 -- the first
+
+      --           [lindef | fun <- fs, let [(_,lindef)] = lookupConcreteLin fun (Grammar absGram [conc])]
+      --       linValue = LiteralValue (StrConstant "empty")
+      --     in
+      --       LinDef (FunId linId) (map VarId vars) linValue
+      -- Old version:
       [(concId,combineConcrete' c) | c@(Concrete (ModId concId) _ _ _ _ _ ) <- concs]
       where
         -- In one concrete syntax, create a new LinDef from a list of rule names
         combineConcrete' :: Concrete -> LinDef
         combineConcrete' conc =
           let
+            -- split funs into head and tail
             (f:fs) = funs
-            linId = concat $ intersperse "_" funs
-            -- First function in list, pattern matching like this includes potentially dangerous assumptions         
+            -- create new linId
+            linId = concat $ intersperse mergeStr funs
+            -- First function in list, pattern matching like this includes potentially dangerous assumptions, i.e. that function must exist
             [(_,Just (vars1,lin1))] = lookupConcreteLin f (Grammar absGram [conc])
             -- the second list of variables should be empty
             ((vars,_),linValue) =
-              foldl (\((v,v'),l) l' -> let ((w,w'),n) = substituteVar linId (v',l) l' in ((v++w,w'),n)) (([],vars1),lin1) [l | fun <- fs, let [(_,l)] = lookupConcreteLin fun (Grammar absGram [conc])]              
+              foldl (\((touchedVars,untouchedVars),lindef) mergedLindef -> let ((touchedVars',untouchedVars'),newLindef) = substituteVar linId (untouchedVars,lindef) mergedLindef in ((touchedVars++touchedVars',untouchedVars'),newLindef))
+                (([],vars1),lin1) -- the first lindef, no touched vars and the (untouched) vars of the first lindef
+                -- look up the lindefs of all functions
+                [lindef | fun <- fs, let [(_,lindef)] = lookupConcreteLin fun (Grammar absGram [conc])]              
           in
             LinDef (FunId linId) (map VarId vars) linValue
-          -- Replaces a variable with a linvalue and returns the new lin as well as the variables split into touched and untouched
+        -- Replaces a variable with a linvalue and returns the new lin as well as the variables split into touched and untouched
         substituteVar :: String -> ([String],LinValue) -> Maybe ([String],LinValue) -> (([String],[String]),LinValue)
+        -- 
         substituteVar _ ([],l) _ = (([],[]),l)
         substituteVar _ ((v:vs),lin) Nothing = (([v],vs),lin)
         substituteVar funId ((v:vs),lin) (Just l') = let (vs',lin') = renameVars funId l' in ((vs',vs), mapLinValue (substitute v lin') lin)
         -- Does the real substitution of the VarValue
         substitute :: String -> LinValue -> LinValue -> LinValue
-        substitute v l (VarValue (VarValueId (Unqual vid))) 
-          | v == vid = l
-        substitute _ _ l = l
+        substitute v newLin (VarValue (VarValueId (Unqual vid))) 
+          | v == vid = newLin
+        substitute _ _ oldLin = oldLin
         -- | Rename all vars in a lin by prefixing them with a function id
         renameVars :: String -> ([String],LinValue) -> ([String],LinValue)
         renameVars funId (vars,lin)=
-          (map ((funId ++"_") ++) vars,mapLinValue (rename funId) lin)
+          (map ((funId ++ mergeStr) ++) vars,mapLinValue (rename funId) lin)
         -- Does the real renaming in the VarValue
-        rename funId (VarValue (VarValueId (Unqual vid))) = (VarValue (VarValueId (Unqual $ funId ++ "_" ++ vid)))
+        rename funId (VarValue (VarValueId (Unqual vid))) = (VarValue (VarValueId (Unqual $ funId ++ mergeStr ++ vid)))
         rename _ l = l
-        -- Generic meta-function to apply a function to each linvalue contained in a linvalue
-        mapLinValue f (ConcatValue l1 l2) = f $ ConcatValue (mapLinValue f l1) (mapLinValue f l2)
-        mapLinValue f (TupleValue ls) = f $ TupleValue (map (mapLinValue f) ls) 
-        mapLinValue f (VariantValue ls) = f $ VariantValue (map (mapLinValue f) ls)
-        mapLinValue f (PreValue pres l) = f $ PreValue [(ss,mapLinValue f lv) | (ss,lv) <- pres] (mapLinValue f l)
-        mapLinValue f (Projection l lid) = f $ Projection (mapLinValue f l) lid
-        mapLinValue f (Selection l1 l2) = f $ Selection (mapLinValue f l1) (mapLinValue f l2)
-        mapLinValue f (CommentedValue s l) = f $ CommentedValue s (mapLinValue f l)
-        mapLinValue f (RecordValue rrvs) = f $ RecordValue [RecordRow i (mapLinValue f l) | RecordRow i l <- rrvs]
-        mapLinValue f (TableValue t trvs) = f $ TableValue t [TableRow p (mapLinValue f l) | TableRow p l <- trvs]
-        mapLinValue f (ParamConstant (Param pid ls)) = f $ ParamConstant (Param pid (map (mapLinValue f) ls))
-        mapLinValue f l = f l
+-- Generic higher-order function to apply a function to each linvalue contained in a linvalue
+mapLinValue :: (LinValue -> LinValue) -> LinValue -> LinValue
+mapLinValue f (ConcatValue l1 l2) = f $ ConcatValue (mapLinValue f l1) (mapLinValue f l2)
+mapLinValue f (TupleValue ls) = f $ TupleValue (map (mapLinValue f) ls) 
+mapLinValue f (VariantValue ls) = f $ VariantValue (map (mapLinValue f) ls)
+mapLinValue f (PreValue pres l) = f $ PreValue [(ss,mapLinValue f lv) | (ss,lv) <- pres] (mapLinValue f l)
+mapLinValue f (Projection l lid) = f $ Projection (mapLinValue f l) lid
+mapLinValue f (Selection l1 l2) = f $ Selection (mapLinValue f l1) (mapLinValue f l2)
+mapLinValue f (CommentedValue s l) = f $ CommentedValue s (mapLinValue f l)
+mapLinValue f (RecordValue rrvs) = f $ RecordValue [RecordRow i (mapLinValue f l) | RecordRow i l <- rrvs]
+mapLinValue f (TableValue t trvs) = f $ TableValue t [TableRow p (mapLinValue f l) | TableRow p l <- trvs]
+mapLinValue f (ParamConstant (Param pid ls)) = f $ ParamConstant (Param pid (map (mapLinValue f) ls))
+mapLinValue f l@(VarValue _) = f l
+mapLinValue f l = error $ "no idea how to handle " ++ show l --f l
 
   
 -- | Loads a canonical grammar from a list of concrete GF files
