@@ -1,3 +1,7 @@
+Warning
+=======
+This is unsupported legacy code
+
 # Readme
 
 This project has a cabal and stack file. The easiest probably is to use stack.
