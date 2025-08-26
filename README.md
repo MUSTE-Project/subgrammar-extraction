@@ -6,7 +6,30 @@ This is unsupported legacy code
 
 This project has a cabal and stack file. The easiest probably is to use stack.
 
+The `glpk` library is required for building this project.
+
 Run `stack ghci` to load all necessary files into a GHCi session.
+
+## Running it
+
+In `ghci` use:
+
+```
+import PGF
+import Data.Maybe
+import qualified Subgrammar.GFRule as GFRule
+
+positive_examples = ["I am here now"]
+negative_examples = ["now I am here"]
+
+rgl <- readPGF "/home/herb/src/gf/gf-rgl/src/english/Lang.pgf"
+grammar = Grammar rgl ["/home/herb/src/gf/gf-rgl/src/english/LangEng.gf"]
+positive_trees = examplesToForests grammar (fromJust $ readLanguage "LangEng") positive_examples
+negative_trees = examplesToForests grammar (fromJust $ readLanguage "LangEng") negative_examples
+problem = GFRule.forestsToProblem positive_trees negative_trees GFRule.numRules
+solution <- solve problem
+generateGrammar grammar (Just "/home/herb/src/gf/gf-rgl/src/") ["abstract","english","common","prelude","api"] solution True
+```
 
 ## Testing 
 
