@@ -5,6 +5,9 @@ module Subgrammar.GFSubtree
   , weightedRules
   ) where
 
+{-
+Subgrammar extraction based on subtree optimization
+-}
 import PGF
 import Data.List
 import Data.Maybe

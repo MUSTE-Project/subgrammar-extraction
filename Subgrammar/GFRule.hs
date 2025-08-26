@@ -5,6 +5,10 @@ module Subgrammar.GFRule
   , weightedRules
   ) where
 
+{-
+Subgrammar extraction based on grammar rule optimization
+-}
+
 import Subgrammar.Common
 import Data.Maybe
 import Control.Monad.LPMonad
