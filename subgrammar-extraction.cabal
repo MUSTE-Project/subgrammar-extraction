@@ -8,7 +8,7 @@ synopsis:            Library and experiments about example-based subgrammar extr
 -- license:
 license-file:        LICENSE
 author:              Herbert Lange
-maintainer:          herbert.lange@cse.gu.se
+maintainer:          herbert.lange@gu.se
 -- copyright:
 category:            Language
 build-type:          Simple
