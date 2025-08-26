@@ -1,5 +1,5 @@
 {- (c) Thomas Hallgren 2019 -}
-{- (c) Herbert Lange 2020 -}
+{- (c) Herbert Lange 2020/2025 -}
 module Canonical where
 
 import System.FilePath((</>),(<.>))
@@ -12,6 +12,12 @@ import Data.List(stripPrefix,nub,intersperse)
 import Data.Maybe
 
 type CanonicalGrammar = GF.Grammar.Canonical.Grammar
+
+str2rawid :: String -> GF.RawIdent
+str2rawid = GF.ident2raw . GF.identS
+
+rawid2str :: GF.RawIdent -> String
+rawid2str = GF.showRawIdent
 
 -- | String used to concatenate function names when merging
 mergeStr :: String
@@ -34,30 +40,30 @@ writeGrammar prefix (Grammar absGram cncs) =
     absPath = gfpath . abstrName 
     cncPath = gfpath . concName
 
-    gfpath (ModId s) = prefix</>s<.>"gf"
+    gfpath (ModId s) = prefix</> (rawid2str (s :: GF.RawIdent)) <.>"gf"
 
 -- | Rename a canonical grammar, i.e. both the abstract and the concrete syntax
 renameGrammar :: String -> CanonicalGrammar -> CanonicalGrammar
 renameGrammar newAbs (Grammar absGram cncs) =
     Grammar (renameAbs absGram) (map renameCnc cncs)
   where
-    renameAbs (Abstract _ fls cs fs) = Abstract (ModId newAbs) fls cs fs
+    renameAbs (Abstract _ fls cs fs) = Abstract (ModId (str2rawid newAbs)) fls cs fs
 
     renameCnc (Concrete (ModId oldCnc) (ModId oldAbs) fls ps lcs ls) =
-        Concrete (ModId newCnc) (ModId newAbs) fls ps lcs ls
+        Concrete (ModId (str2rawid newCnc)) (ModId (str2rawid newAbs)) fls ps lcs ls
       where
-        newCnc = maybe oldCnc (newAbs++) (stripPrefix oldAbs oldCnc)
+        newCnc = maybe (rawid2str oldCnc) (newAbs++) (stripPrefix (rawid2str oldAbs) (rawid2str oldCnc))
 
 -- Extensions by Herbert Lange
 
 -- | Get the abstract name of a canonical grammar
 getAbsName :: CanonicalGrammar -> String
-getAbsName (Grammar (Abstract (ModId name) _ _ _) _) = name
+getAbsName (Grammar (Abstract (ModId name) _ _ _) _) = rawid2str name
 
 -- | Get all the concrete names of a canonical grammar
 getConcNames :: CanonicalGrammar -> [String]
 getConcNames (Grammar _ concs) =
-  [name | (Concrete (ModId name) _ _ _ _ _) <- concs]
+  [rawid2str name | (Concrete (ModId name) _ _ _ _ _) <- concs]
 
 -- | Function to filter out rules that are not in a list of allowed ones
 filterGrammar :: [String] -> [String] -> CanonicalGrammar -> CanonicalGrammar
@@ -66,14 +72,14 @@ filterGrammar includedFuns excludedFuns (Grammar absGram concs) =
     $ map filterConcrete concs
   where
     filterAbstract (Abstract absId flags cats absfuns) =
-      Abstract absId flags cats [f | f <- absfuns, let (FunDef (FunId fname) _) = f, fname `elem` includedFuns, fname `notElem` excludedFuns]
+      Abstract absId flags cats [f | f <- absfuns, let (FunDef (FunId fname) _) = f, (rawid2str fname) `elem` includedFuns, (rawid2str fname) `notElem` excludedFuns]
     filterConcrete  (Concrete concId absId flags params lincat lindef) =
-      Concrete concId absId flags params lincat [f | f <- lindef, let (LinDef (FunId fname) _ _) = f, fname `elem` includedFuns, fname `notElem` excludedFuns]
+      Concrete concId absId flags params lincat [f | f <- lindef, let (LinDef (FunId fname) _ _) = f, (rawid2str fname) `elem` includedFuns, (rawid2str fname) `notElem` excludedFuns]
 
 -- | Get all abstract funcrions from a canonical grammar
 allAbsFuns :: CanonicalGrammar -> [String]
 allAbsFuns (Grammar (Abstract _ _ _ funs) _) =
-  [funId | (FunDef (FunId funId) _) <- funs]
+  [rawid2str funId | (FunDef (FunId funId) _) <- funs]
 
 -- | Looks up an abstract type from a canonical grammar
 lookupAbstractType :: String -> CanonicalGrammar -> Maybe Type
@@ -81,14 +87,14 @@ lookupAbstractType funId (Grammar absGram _) =
   let
     (Abstract _ _ _ absFuns) = absGram
   in
-    listToMaybe [funType | (FunDef (FunId funId') funType) <- absFuns, funId' == funId]
+    listToMaybe [funType | (FunDef (FunId funId') funType) <- absFuns, funId' == str2rawid funId]
 
 -- | Looks up a linearization from a canonical grammar
 lookupConcreteLin :: String -> CanonicalGrammar -> [(String, Maybe ([String],LinValue))]
 lookupConcreteLin funId (Grammar _ concGrams) =
-  map (\c@(Concrete (ModId concId) _ _ _ _ _) -> (concId,lookupConcreteLin' c)) concGrams
+  map (\c@(Concrete (ModId concId) _ _ _ _ _) -> (rawid2str concId,lookupConcreteLin' c)) concGrams
   where
-    lookupConcreteLin' (Concrete _ _ _ _ _ lindef) = listToMaybe [([id' | (VarId id') <- vars],value) |(LinDef (FunId funId') vars value) <- lindef, funId' == funId]
+    lookupConcreteLin' (Concrete _ _ _ _ _ lindef) = listToMaybe [([rawid2str id' | (VarId id') <- vars],value) |(LinDef (FunId funId') vars value) <- lindef, funId' == str2rawid funId]
 
 -- | Merges rules
 mergeRules :: [[String]] -> CanonicalGrammar -> CanonicalGrammar
@@ -124,7 +130,7 @@ mergeRules rules g@(Grammar absGram concs) =
         -- Create new function type from the types of the single functions by stepwise updating the type
         funtype = foldl (\fullType nextPart -> updateType fullType (lookupAbstractType nextPart grammar)) (fromJust $ lookupAbstractType f grammar) fs
       in
-        FunDef (FunId funId) funtype
+        FunDef (FunId (str2rawid funId)) funtype
       where
         -- | Combines two types to a new type
         -- It looks for any parameter in the first type that has the same category as the result type of the second type
@@ -145,12 +151,12 @@ mergeRules rules g@(Grammar absGram concs) =
         getBindingCat (TypeBinding _ (Type _ app)) = getAppCat app
         -- Get the main category from a type application
         getAppCat :: TypeApp -> String
-        getAppCat (TypeApp (CatId c) _) = c
+        getAppCat (TypeApp (CatId c) _) = rawid2str c
     -- Merges a concrete grammar with a list of newly  combined functions
     -- Updates the lindefs for each concrete grammar where the id matches. The first component of the second parameter is the id of the concrete syntax to be updated
     mergeConcrete :: [Concrete] -> [[(String,LinDef)]] -> [Concrete]
     mergeConcrete cs newLins =
-      [ (Concrete (ModId concId) absId flags params lincat (lindef ++ [lin | lins <- newLins, (concId',lin) <- lins,concId' == concId])) | (Concrete (ModId concId) absId flags params lincat lindef) <- cs]
+      [ (Concrete (ModId concId) absId flags params lincat (lindef ++ [lin | lins <- newLins, (concId',lin) <- lins,concId' == rawid2str concId])) | (Concrete (ModId concId) absId flags params lincat lindef) <- cs]
     combineConcrete :: [String] -> [(String,LinDef)]
     combineConcrete funs =
       -- -- New Version
@@ -176,7 +182,7 @@ mergeRules rules g@(Grammar absGram concs) =
       --     in
       --       LinDef (FunId linId) (map VarId vars) linValue
       -- Old version:
-      [(concId,combineConcrete' c) | c@(Concrete (ModId concId) _ _ _ _ _ ) <- concs]
+      [(rawid2str concId,combineConcrete' c) | c@(Concrete (ModId concId) _ _ _ _ _ ) <- concs]
       where
         -- In one concrete syntax, create a new LinDef from a list of rule names
         combineConcrete' :: Concrete -> LinDef
@@ -195,7 +201,7 @@ mergeRules rules g@(Grammar absGram concs) =
                 -- look up the lindefs of all functions
                 [lindef | fun <- fs, let [(_,lindef)] = lookupConcreteLin fun (Grammar absGram [conc])]              
           in
-            LinDef (FunId linId) (map VarId vars) linValue
+            LinDef (FunId (str2rawid linId)) (map VarId (map str2rawid vars)) linValue
         -- Replaces a variable with a linvalue and returns the new lin as well as the variables split into touched and untouched
         substituteVar :: String -> ([String],LinValue) -> Maybe ([String],LinValue) -> (([String],[String]),LinValue)
         -- 
@@ -205,15 +211,16 @@ mergeRules rules g@(Grammar absGram concs) =
         -- Does the real substitution of the VarValue
         substitute :: String -> LinValue -> LinValue -> LinValue
         substitute v newLin (VarValue (VarValueId (Unqual vid))) 
-          | v == vid = newLin
+          | v == (GF.showRawIdent vid) = newLin
         substitute _ _ oldLin = oldLin
         -- | Rename all vars in a lin by prefixing them with a function id
         renameVars :: String -> ([String],LinValue) -> ([String],LinValue)
         renameVars funId (vars,lin)=
           (map ((funId ++ mergeStr) ++) vars,mapLinValue (rename funId) lin)
         -- Does the real renaming in the VarValue
-        rename funId (VarValue (VarValueId (Unqual vid))) = (VarValue (VarValueId (Unqual $ funId ++ mergeStr ++ vid)))
+        rename funId (VarValue (VarValueId (Unqual vid))) = (VarValue (VarValueId (Unqual $ str2rawid $ funId ++ mergeStr ++ (GF.showRawIdent vid))))
         rename _ l = l
+        
 -- Generic higher-order function to apply a function to each linvalue contained in a linvalue
 mapLinValue :: (LinValue -> LinValue) -> LinValue -> LinValue
 mapLinValue f (ConcatValue l1 l2) = f $ ConcatValue (mapLinValue f l1) (mapLinValue f l2)
