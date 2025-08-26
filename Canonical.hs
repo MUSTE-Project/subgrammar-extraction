@@ -8,7 +8,7 @@ import GF.Support(writeUTF8File,optLibraryPath,modifyFlags,noOptions)
 import GF.Text.Pretty(render80)
 import qualified GF
 import GF.Grammar.Canonical -- (Grammar(..),ModId(..),abstrName,concName,Abstract)
-import Data.List(stripPrefix,nub,intersperse)
+import Data.List(stripPrefix,nub,intersperse,isPrefixOf)
 import Data.Maybe
 
 type CanonicalGrammar = GF.Grammar.Canonical.Grammar
@@ -35,12 +35,17 @@ writeGrammar :: FilePath -> CanonicalGrammar -> IO ()
 writeGrammar prefix (Grammar absGram cncs) =
   do createDirectoryIfMissing False prefix
      writeUTF8File (absPath absGram) (render80 absGram)
-     sequence_ [writeUTF8File (cncPath cnc) (render80 cnc) | cnc<-cncs]
+     sequence_ [writeUTF8File (cncPath cnc) (fix_predef $ render80 cnc) | cnc<-cncs]
   where
     absPath = gfpath . abstrName 
     cncPath = gfpath . concName
 
     gfpath (ModId s) = prefix</> (rawid2str (s :: GF.RawIdent)) <.>"gf"
+    fix_predef :: String -> String
+    fix_predef [] = []
+    fix_predef str
+     | isPrefixOf "Predef_" str = "Predef." ++ (fix_predef $ drop (length "Predef_") str)
+     | otherwise = take 1 str ++ (fix_predef $ drop 1 str)
 
 -- | Rename a canonical grammar, i.e. both the abstract and the concrete syntax
 renameGrammar :: String -> CanonicalGrammar -> CanonicalGrammar
