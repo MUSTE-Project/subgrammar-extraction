@@ -101,7 +101,7 @@ test f o merge =
     putStrLn $ ">>> Got solution: " ++ show (filter isRule $ snd solution)
     -- create new grammar
     putStrLn ">>> Create New Grammar"
-    grammar' <- generateGrammar grammar solution merge
+    grammar' <- generateGrammar grammar default_rgl_path default_rgl_subdirs solution merge
     putStrLn $ ">>> Loaded " ++ (show $ length $ functions $ pgf grammar') ++ " Rules"
   -- check result
     let testResults = testExamples grammar' (fromJust $ readLanguage "ExemplumSubEng") examples
@@ -152,7 +152,7 @@ testNegative f o merge =
     solution <- runTest f o grammar positive_forests negative_forests
     -- create new grammar
     putStrLn ">>> Create New Grammar"
-    grammar' <- generateGrammar grammar solution merge
+    grammar' <- generateGrammar grammar default_rgl_path default_rgl_subdirs solution merge
     putStrLn $ ">>> Loaded " ++ (show $ length $ functions $ pgf grammar') ++ " Rules"
     putStrLn $ (show $ functions $ pgf grammar')
     -- check result

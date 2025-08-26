@@ -49,10 +49,10 @@ problemConstraints = constraints
 -- Constants -> Have to be updated
 path_to_exemplum :: String
 path_to_exemplum = "../mulle-grammars/Exemplum"
-rgl_path :: String
-rgl_path = "../gf-rgl/src"
-rgl_subdirs :: String
-rgl_subdirs = "abstract common prelude english"
+default_rgl_path :: Maybe String
+default_rgl_path = Just "../gf-rgl/src"
+default_rgl_subdirs :: [FilePath]
+default_rgl_subdirs = ["abstract", "common", "prelude", "english"]
 
 
 {- | Taken from MissingH:Data.String.Utils:
@@ -111,10 +111,10 @@ examplesToForests grammar language examples =
 
 
 -- | Function to create a new grammar from an old grammar and a solution
-generateGrammar :: Grammar -> Solution -> Bool -> IO Grammar
-generateGrammar grammar solution merge =
+generateGrammar :: Grammar -> Maybe String -> [FilePath] -> Solution -> Bool -> IO Grammar
+generateGrammar grammar rgl_path rgl_subdirs solution merge =
   do
-    let lib_path = ".":rgl_path:[rgl_path</>subdir | subdir <- words rgl_subdirs] :: [FilePath]
+    let lib_path = maybe ["."] (\p -> ".":p:[p</>subdir | subdir <- rgl_subdirs] :: [FilePath]) rgl_path
         options = modifyFlags (\f -> f { optLibraryPath = lib_path })    
         -- read old concrete syntax
     canon <- loadCanonicalGrammar lib_path $ concs grammar
